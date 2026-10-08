@@ -11,6 +11,7 @@
 // is Binance's public read-only market-data mirror with the same response
 // shape and no geo-restriction.
 import { fetchWithTimeout } from "../http.mjs";
+import { isThinExtreme } from "../anomaly.mjs";
 
 const BASE_URL = "https://data-api.binance.vision";
 const SYMBOLS = ["BTCUSDT", "ETHUSDT", "BNBUSDT"];
@@ -172,7 +173,9 @@ export async function getDynamicBasket(size = 20) {
  * not just a flat ranking.
  */
 export async function getLeadersLaggards({ basketSize = 20, topN = 3 } = {}) {
-  const basket = await getDynamicBasket(basketSize);
+  // Thin-liquidity extreme movers (e.g. +126% on a small volume) are dropped
+  // here so the bot never promotes a pump; see anomaly.mjs.
+  const basket = (await getDynamicBasket(basketSize)).filter((t) => !isThinExtreme(t));
   const sorted = [...basket].sort((a, b) => b.priceChangePercent - a.priceChangePercent);
 
   return {
