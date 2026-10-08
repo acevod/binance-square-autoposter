@@ -1,5 +1,49 @@
 [
   {
+    "id": "6141f9fb-acf6-46c6-90d0-d2ac8d75ee4b",
+    "date": "2026-10-08T06:12:11.006Z",
+    "theme": "breakout-watch",
+    "text": "$XRP swung hard, covering about 6.3% of its price in 24 h, that's roughly 75% more range than it usually sees. It closed around $1.405, down 4.6% on the day.\n\n$DOGE was next, bouncing through a 6.78% band, about 51% wider than its normal daily swing. The coin sat near $0.0876, also down roughly 3.3%.\n\n$ZEC wasn't far behind, moving through a 9.71% range, 41% above its week-average spread. It finished the session at $1,242.47, down 5.6%.",
+    "status": "published",
+    "postId": 374983603720313,
+    "shareLink": "https://app.binance.com/uni-qr/cpos/374983603720313?r=HWHSII2G&l=en",
+    "meta": {
+      "sourceHash": "4aa4fa563b4212f7",
+      "sourceSnapshot": [
+        {
+          "symbol": "XRPUSDT",
+          "cashtag": "$XRP",
+          "lastPrice": 1.405,
+          "priceChangePercent": -4.565,
+          "last24hRangePct": 6.320284697508896,
+          "avgRangePct": 3.617425357937266,
+          "ratio": 1.7471776393785383
+        },
+        {
+          "symbol": "DOGEUSDT",
+          "cashtag": "$DOGE",
+          "lastPrice": 0.08759,
+          "priceChangePercent": -3.312,
+          "last24hRangePct": 6.781596072611029,
+          "avgRangePct": 4.484979278117949,
+          "ratio": 1.5120685408064625
+        },
+        {
+          "symbol": "ZECUSDT",
+          "cashtag": "$ZEC",
+          "lastPrice": 1242.47,
+          "priceChangePercent": -5.557,
+          "last24hRangePct": 9.70566693763229,
+          "avgRangePct": 6.890128688628174,
+          "ratio": 1.408633623004898
+        }
+      ],
+      "sourceFetchedAt": "2026-10-08T06:12:10.278Z",
+      "promptVersion": "2.0",
+      "validatorVersion": "2.0"
+    }
+  },
+  {
     "id": "7dab8e4c-5c8e-4140-960c-aa8de5140b13",
     "date": "2026-10-07T23:08:53.758Z",
     "theme": "morning-brief",
