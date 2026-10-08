@@ -12,6 +12,9 @@ import {
 import { getTokenizedStocksSnapshot } from "./sources/tokenized-stocks.mjs";
 import { getRecentThemes } from "./validate.mjs";
 import { fetchWithTimeout, TIMEOUTS } from "./http.mjs";
+import { factsPromptBlock } from "./facts.mjs";
+
+export const PROMPT_VERSION = "2.0";
 
 // NOTE: trading-signal, crypto-market-rank, and meme-rush skills are
 // intentionally NOT imported here anymore. They surface tokens from
@@ -93,23 +96,15 @@ async function pickTheme() {
 // Appended to every theme's system prompt so they don't have to repeat it.
 // ---------------------------------------------------------------------------
 const TONE_EXAMPLE = `
-Example of the tone to match (casual, like texting a friend an update —
-not the topic, just the voice):
+Voice to match (casual, like texting a friend an update). Style only, never
+reuse its wording:
 
-"BTC's sitting at $84K after tapping $85.2K then sliding back to $83.1K,
-still choppy this week. ETH barely moved, hanging around $2.7K. BNB's
-actually the one bleeding, down over half a percent to $775. Nothing
-dramatic today, just a quiet grind lower across the board."
+"BTC's at $84K after tapping $85.2K and sliding back to $83.1K. ETH barely
+moved around $2.7K. BNB's the one giving ground, down over half a percent."
 
-Notice: contractions (BTC's, isn't), plain word choices, a personal read
-at the end ("nothing dramatic", "quiet grind") instead of a generic hype
-phrase, and no clinical listing of every stat with formal transitions.
-
-IMPORTANT: this example shows the VOICE to match, not phrases to reuse.
-Do not reuse "quiet grind", "nothing dramatic", or any other specific
-wording from this example — write your own closing line in your own
-words. Copying phrasing from this example across multiple posts creates
-the exact repetitive pattern this whole style guide is trying to avoid.
+Notes: contractions, plain words, no clinical listing of every stat. End on a
+concrete fact from the data, not on a mood phrase. Write a different ending
+every time; stock closings are rejected by the validator.
 `.trim();
 
 const STYLE_RULES = `
@@ -257,8 +252,9 @@ Rules for this theme:
 - These are tokenized versions, not the shares themselves. Say "tokenized
   stock" or "bStock", never "shares", "contracts", or "the stock itself".
 - Prices and volumes are in USDT; write USDT as plain text, never $USDT.
-- Lean into the angle that these trade around the clock, including outside
-  normal stock market hours. That's the interesting part, not just the move.
+- You may say these trade 24/7 as a fact about the product. Do NOT claim the
+  given move or volume happened overnight, after hours, or while US markets
+  were closed: the data is a 24h total and does not show when it happened.
 - Cover 2-3 tokens. Keep it under 1600 characters.
 ${STYLE_RULES}`,
 
@@ -295,7 +291,7 @@ async function callGroq(prompt) {
       // Real headroom beyond the ~500-char post itself, since reasoning
       // still eats into this even at "low" effort.
       max_tokens: 4000,
-      temperature: 0.9,
+      temperature: 0.5,
     }),
   }, TIMEOUTS.llm);
 
@@ -331,7 +327,7 @@ async function callGemini(prompt) {
       headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2400, temperature: 0.9 },
+        generationConfig: { maxOutputTokens: 2400, temperature: 0.5 },
       }),
     },
     TIMEOUTS.llm
@@ -406,10 +402,18 @@ export async function generatePost() {
   if (Array.isArray(data) && data.length === 0) {
     throw new Error(`No source data for theme "${theme.id}"`);
   }
-  const prompt = THEME_PROMPTS[theme.id](data);
+  const fetchedAt = new Date().toISOString();
+  const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data);
   const text = sanitizeText(await callLLM(prompt));
 
-  return { theme: theme.id, themeLabel: theme.label, text, rawData: data };
+  return {
+    theme: theme.id,
+    themeLabel: theme.label,
+    text,
+    rawData: data,
+    fetchedAt,
+    promptVersion: PROMPT_VERSION,
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
