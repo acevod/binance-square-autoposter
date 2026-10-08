@@ -29,10 +29,10 @@ function isDefinitiveRejection(err) {
  * the post or the outcome can't be determined; the error carries
  * `publishOutcome` = "failed" (safe to retry) or "unknown" (do not retry).
  */
-export async function publishPost({ theme, text }) {
+export async function publishPost({ theme, text, meta }) {
   const apiKey = resolveApiKey(); // reads BINANCE_SQUARE_OPENAPI_KEY from env
 
-  const entry = await recordPost({ theme, text, status: "pending" });
+  const entry = await recordPost({ theme, text, status: "pending", meta });
 
   let result;
   try {
