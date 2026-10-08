@@ -101,7 +101,9 @@ test("HistoryError is fatal and propagates", async () => {
   await assert.rejects(silently(() => run(deps)), HistoryError);
 });
 
-test("504 'unknown' result is a (warned) success, exit 0", async () => {
-  const { deps } = harness({ publish: async () => ({ id: null, shareLink: null, status: "unknown" }) });
-  assert.equal((await silently(() => run(deps))).exitCode, 0);
+test("504 'unknown' result exits non-zero (so the run is not green) and is not retried", async () => {
+  const { calls, deps } = harness({ publish: async () => { calls.publish++; return { id: null, shareLink: null, status: "unknown" }; } });
+  const r = await silently(() => run(deps));
+  assert.equal(r.exitCode, 2);
+  assert.equal(calls.publish, 1);
 });
