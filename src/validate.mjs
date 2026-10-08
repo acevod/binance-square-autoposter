@@ -14,6 +14,8 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { extractCashtags } from "./cashtags.mjs";
+import { checkSemantics } from "./semantic.mjs";
+import { checkFatigue } from "./fatigue.mjs";
 import { checkGrounding } from "./grounding.mjs";
 
 const MAX_LENGTH = 1850; // confirmed limit is 1900; prompts target 1600
@@ -223,7 +225,19 @@ export async function validatePost(text, theme, rawData) {
     }
   }
 
+  if (rawData !== undefined) {
+    const semantic = checkSemantics(trimmed, theme, rawData);
+    if (!semantic.ok) {
+      if (process.env.SEMANTIC_MODE === "warn") {
+        console.warn(`[semantic:warn] ${semantic.reason}`);
+      } else {
+        return { valid: false, reason: `Contradicts source data: ${semantic.reason}` };
+      }
+    }
+  }
+
   const history = await loadHistory();
+
   for (const past of history) {
     const similarity = wordOverlapRatio(trimmed, past.text);
     if (similarity >= DUPLICATE_SIMILARITY_THRESHOLD) {
@@ -234,6 +248,11 @@ export async function validatePost(text, theme, rawData) {
     }
   }
 
+  const fatigue = checkFatigue(trimmed, history);
+  if (!fatigue.ok) {
+    return { valid: false, reason: fatigue.reason };
+  }
+
   return { valid: true };
 }
 
@@ -241,7 +260,7 @@ export async function validatePost(text, theme, rawData) {
  * Add a post to history and return the stored entry (with its `id`).
  * status: "pending" (about to publish) | "published" | "unknown" | "failed".
  */
-export async function recordPost({ theme, text, postId, shareLink, status = "published" }) {
+export async function recordPost({ theme, text, postId, shareLink, status = "published", meta }) {
   const history = await loadHistory();
   const entry = {
     id: randomUUID(),
@@ -251,6 +270,7 @@ export async function recordPost({ theme, text, postId, shareLink, status = "pub
     status,
     postId: postId ?? null,
     shareLink: shareLink ?? null,
+    ...(meta ? { meta } : {}),
   };
   history.unshift(entry);
   await saveHistory(history.slice(0, HISTORY_KEEP));
