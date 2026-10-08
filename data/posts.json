@@ -1,5 +1,52 @@
 [
   {
+    "id": "bc9a6675-0e3a-44f6-9b84-e4c1a1ac70e1",
+    "date": "2026-10-08T13:37:35.041Z",
+    "theme": "daily-recap",
+    "text": "$BTC slipped 1.52% to $82,156, hugging the low of $81,989 before nudging up to $83,682. Quote-volume hit about $1.39 B, the heftiest of the three.\n\n$ETH fell 1.58% to $2,523 after a brief bounce near $2,587, its 24h swing the widest at roughly 2.72%. Quote-volume sat near $780 M.\n\n$BNB dropped just under 1% to $758.9, trading between $756.3 and $776.2, a 2.62% range. Quote-volume was about $68 M.",
+    "status": "published",
+    "postId": 375093065809253,
+    "shareLink": "https://app.binance.com/uni-qr/cpos/375093065809253?r=HWHSII2G&l=en",
+    "meta": {
+      "sourceHash": "da80c4c274b3fe60",
+      "sourceSnapshot": [
+        {
+          "symbol": "BTCUSDT",
+          "cashtag": "$BTC",
+          "lastPrice": 82156.25,
+          "priceChangePercent": -1.517,
+          "highPrice": 83681.91,
+          "lowPrice": 81989.44,
+          "volume": 16703.08983,
+          "quoteVolume": 1385679914.1138804
+        },
+        {
+          "symbol": "ETHUSDT",
+          "cashtag": "$ETH",
+          "lastPrice": 2522.73,
+          "priceChangePercent": -1.584,
+          "highPrice": 2587.28,
+          "lowPrice": 2518.66,
+          "volume": 304517.8253,
+          "quoteVolume": 779666882.726381
+        },
+        {
+          "symbol": "BNBUSDT",
+          "cashtag": "$BNB",
+          "lastPrice": 758.87,
+          "priceChangePercent": -0.995,
+          "highPrice": 776.23,
+          "lowPrice": 756.33,
+          "volume": 88585.995,
+          "quoteVolume": 67988874.65321
+        }
+      ],
+      "sourceFetchedAt": "2026-10-08T13:37:34.408Z",
+      "promptVersion": "2.0",
+      "validatorVersion": "2.0"
+    }
+  },
+  {
     "id": "6141f9fb-acf6-46c6-90d0-d2ac8d75ee4b",
     "date": "2026-10-08T06:12:11.006Z",
     "theme": "breakout-watch",
