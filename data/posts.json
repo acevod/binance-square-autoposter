@@ -1,5 +1,27 @@
 [
   {
+    "id": "87b9e804-4e6c-4d71-921b-14733b959ac2",
+    "date": "2026-10-08T23:24:22.473Z",
+    "theme": "relative-strength",
+    "text": "$ETH slipped 2.04% against $BTC, so it's losing ground on the top dog. Meanwhile $BTC fell 1.69% in USD terms, but that's still way better than the median alt, which dropped 6.49% across the 19-coin basket. In short, Bitcoin's out-performing most alts, and Ethereum's relative strength is weakening.",
+    "status": "published",
+    "postId": 375237275997127,
+    "shareLink": "https://app.binance.com/uni-qr/cpos/375237275997127?r=HWHSII2G&l=en",
+    "meta": {
+      "sourceHash": "2cd74df115ae5b85",
+      "sourceSnapshot": {
+        "ethBtcPrice": 0.03027,
+        "ethBtcChangePercent": -2.039,
+        "btcChangePercent": -1.688,
+        "altsMedianChangePercent": -6.489,
+        "altsCount": 19
+      },
+      "sourceFetchedAt": "2026-10-08T23:24:21.742Z",
+      "promptVersion": "2.0",
+      "validatorVersion": "2.0"
+    }
+  },
+  {
     "id": "bc9a6675-0e3a-44f6-9b84-e4c1a1ac70e1",
     "date": "2026-10-08T13:37:35.041Z",
     "theme": "daily-recap",
