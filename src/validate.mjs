@@ -16,6 +16,7 @@ import path from "node:path";
 import { extractCashtags } from "./cashtags.mjs";
 import { checkSemantics } from "./semantic.mjs";
 import { checkFatigue } from "./fatigue.mjs";
+import { checkAnomaly } from "./anomaly.mjs";
 import { checkGrounding } from "./grounding.mjs";
 
 const MAX_LENGTH = 1850; // confirmed limit is 1900; prompts target 1600
@@ -234,6 +235,11 @@ export async function validatePost(text, theme, rawData) {
         return { valid: false, reason: `Contradicts source data: ${semantic.reason}` };
       }
     }
+  }
+
+  if (rawData !== undefined) {
+    const anomaly = checkAnomaly(trimmed, rawData);
+    if (!anomaly.ok) return { valid: false, reason: anomaly.reason };
   }
 
   const history = await loadHistory();
