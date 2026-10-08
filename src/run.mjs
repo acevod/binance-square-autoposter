@@ -15,6 +15,22 @@
 import { generatePost } from "./generate.mjs";
 import { validatePost, HistoryError } from "./validate.mjs";
 import { publishPost } from "./publish.mjs";
+import { createHash } from "node:crypto";
+
+export const VALIDATOR_VERSION = "2.0";
+
+// Audit trail stored with each history entry: lets a published number be
+// traced back to the exact source data and settings that produced it.
+function buildMeta(draft) {
+  const json = JSON.stringify(draft.rawData ?? null);
+  return {
+    sourceHash: createHash("sha256").update(json).digest("hex").slice(0, 16),
+    sourceSnapshot: json.length <= 4000 ? draft.rawData : undefined,
+    sourceFetchedAt: draft.fetchedAt,
+    promptVersion: draft.promptVersion,
+    validatorVersion: VALIDATOR_VERSION,
+  };
+}
 
 const MAX_ATTEMPTS = 3;
 const BASE_DELAY_MS = 5_000;
@@ -69,10 +85,13 @@ export async function run({
 
     // 3. publish
     try {
-      const result = await publish({ theme, text });
+      const result = await publish({ theme, text, meta: buildMeta(draft) });
       console.log(`Published on attempt ${attempt}. status=${result.status} id=${result.id ?? "n/a"} link=${result.shareLink ?? "n/a"}`);
       if (result.status === "unknown") {
-        console.warn("::warning::Square returned 504: post probably went through but is NOT confirmed. Check Square manually.");
+        // Non-zero on purpose: the run must not look green. The post is probably
+        // live (so we never retry), but it is unconfirmed and a human must check.
+        console.error("::error::Square returned 504: post probably went through but is NOT confirmed. Check Square manually.");
+        return { exitCode: 2, result };
       }
       return { exitCode: 0, result };
     } catch (err) {
