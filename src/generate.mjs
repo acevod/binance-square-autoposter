@@ -13,6 +13,7 @@ import { getTokenizedStocksSnapshot } from "./sources/tokenized-stocks.mjs";
 import { getRecentThemes } from "./validate.mjs";
 import { fetchWithTimeout, TIMEOUTS } from "./http.mjs";
 import { factsPromptBlock } from "./facts.mjs";
+import { anomalyPromptBlock } from "./anomaly.mjs";
 
 export const PROMPT_VERSION = "2.0";
 
@@ -403,7 +404,7 @@ export async function generatePost() {
     throw new Error(`No source data for theme "${theme.id}"`);
   }
   const fetchedAt = new Date().toISOString();
-  const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data);
+  const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data) + anomalyPromptBlock(data);
   const text = sanitizeText(await callLLM(prompt));
 
   return {
