@@ -110,7 +110,7 @@ test("relative strength: correct 'alts beating BTC' is accepted", () => {
   assert.equal(checkSemantics("The median alt gained 1.78%, so the typical alt is outperforming BTC.", "relative-strength", REL).ok, true);
 });
 
-const REGIME = { btcChangePercent: 1.2, altsMedianChangePercent: 2.9, altsCount: 19, breadthUpPct: 79, medianRangePct: 4.1, direction: "broad-up", leadership: "alt-led" };
+const REGIME = { btcChangePercent: 1.2, altsMedianChangePercent: 2.9, altsCount: 19, breadthUpPct: 79, medianRangePct: 4.1, direction: "broad-up", leadership: "alts-ahead" };
 
 test("regime: accepts a read that matches the labels", () => {
   const text = "A broad rally today: 79% of alts are up and the typical alt gained 2.9%, ahead of BTC at 1.2%. It was alt-led.";
@@ -130,8 +130,8 @@ test("regime: rejects 'BTC ahead of the alts' when the median alt is ahead", () 
 
 test("regime prompt block states both labels", () => {
   const block = factsPromptBlock("market-regime", REGIME);
-  assert.match(block, /direction: broad-up \(79% of alts are up\)/);
-  assert.match(block, /leadership: alt-led/);
+  assert.match(block, /direction: a broad rise \(79% of alts are up\)/);
+  assert.match(block, /typical alt did BETTER than BTC/);
   assert.match(block, /risk-on/);
 });
 
@@ -151,4 +151,20 @@ test("facts understand bStock field names (lastPriceUSDT / volumeUSDT)", () => {
 test("bStocks: a wrong superlative is now caught", () => {
   const r = checkSemantics("$TSLAB had the widest range today, and $NVDAB the biggest dollar volume.", "tokenized-stocks", BSTOCKS);
   assert.equal(r.ok, false);
+});
+
+// The real failed run of 9 Oct: BTC -0.56%, median alt -2.95%, 16% of alts up.
+const REGIME_DOWN = { btcChangePercent: -0.56, altsMedianChangePercent: -2.95, altsCount: 19, breadthUpPct: 16, medianRangePct: 12.14, direction: "broad-down", leadership: "btc-ahead" };
+
+test("regime (real failed draft): 'BTC leading the drop' and pasted label tokens are rejected", () => {
+  const text = "$BTC slipped 0.56% while the alt crowd took a deeper dive, median down 2.95% across 19 coins. Only 16% of the alts managed to stay up, so it's a broad-down move and BTC is clearly leading the drop.";
+  const r = checkSemantics(text, "market-regime", REGIME_DOWN);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /led the drop/);
+  assert.match(r.reason, /internal label/);
+});
+
+test("regime: a plain-words read of the same day is accepted", () => {
+  const text = "$BTC slipped 0.56%, but the typical alt fell 2.95%, so BTC held up better. Only 16% of the 19 alts finished green, a broad decline.";
+  assert.equal(checkSemantics(text, "market-regime", REGIME_DOWN).ok, true);
 });
