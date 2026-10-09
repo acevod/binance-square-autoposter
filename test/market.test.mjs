@@ -108,7 +108,7 @@ test("buildRegime: broad-up and alt-led", () => {
   const basket = [asset("BTCUSDT", 1), ...[3, 3.5, 2.8, 3.2, 2.5, 4, 3.1, 2.9, -0.5, 3.3].map((c, i) => asset(`A${i}USDT`, c))];
   const r = buildRegime(basket);
   assert.equal(r.direction, "broad-up");
-  assert.equal(r.leadership, "alt-led");
+  assert.equal(r.leadership, "alts-ahead");
   assert.equal(r.breadthUpPct, 90);
   assert.equal(r.altsCount, 10);
 });
@@ -117,7 +117,7 @@ test("buildRegime: broad-down and btc-led", () => {
   const basket = [asset("BTCUSDT", -0.5), ...[-3, -2.5, -3.2, -2, -2.8, 0.2, -3.1].map((c, i) => asset(`A${i}USDT`, c))];
   const r = buildRegime(basket);
   assert.equal(r.direction, "broad-down");
-  assert.equal(r.leadership, "btc-led");
+  assert.equal(r.leadership, "btc-ahead");
 });
 
 test("buildRegime: mixed and in-line", () => {
