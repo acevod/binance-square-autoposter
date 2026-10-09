@@ -58,3 +58,13 @@ test("empty source data cannot ground anything", () => {
   assert.equal(r.ok, false);
   assert.match(r.reason, /No source data/);
 });
+
+import { checkGrounding as checkG } from "../src/grounding.mjs";
+
+test("'3.72 million' / '1.4 billion' are read as 3,720,000 / 1.4e9 (real failed draft, 9 Oct)", () => {
+  const data = [{ cashtag: "$SKHYB", lastPriceUSDT: 173.47, priceChangePercent: -1.722, volumeUSDT: 3721456.2 }];
+  assert.equal(checkG("$SKHYB moved about 3.72 million USDT.", "tokenized-stocks", data).ok, true);
+  assert.equal(checkG("$SKHYB moved about 4.9 million USDT.", "tokenized-stocks", data).ok, false);
+  const big = [{ cashtag: "$BTC", quoteVolume: 1.41e9 }];
+  assert.equal(checkG("$BTC saw 1.4 billion USDT.", "daily-recap", big).ok, true);
+});
