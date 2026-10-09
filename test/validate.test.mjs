@@ -82,3 +82,10 @@ test("em dash and length limits", async () => {
   assert.equal((await validatePost("$BTC", "morning-brief")).valid, false);
   assert.equal((await validatePost("$BTC " + "x ".repeat(1000), "morning-brief")).valid, false);
 });
+
+test("market-regime posts pass grounding although the data has no cashtag fields (real failure, 9 Oct)", async () => {
+  await useTempHistory();
+  const data = { btcChangePercent: -0.56, altsMedianChangePercent: -2.95, altsCount: 19, breadthUpPct: 16, medianRangePct: 12.14, direction: "broad-down", leadership: "btc-ahead" };
+  const text = "$BTC slipped 0.56%, but the typical alt fell 2.95%, so BTC held up better. Only 16% of the 19 alts finished green, and their typical 24h range was 12.14%, a wide day for a broad decline.";
+  assert.deepEqual(await validatePost(text, "market-regime", data), { valid: true });
+});
