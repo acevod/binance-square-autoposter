@@ -31,6 +31,8 @@ export function buildMeta(draft) {
     provider: draft.provider,
     model: draft.model,
     validatorVersion: VALIDATOR_VERSION,
+    // outlet + title only, never links; empty when no headline context was used
+    headlines: draft.news ? Object.values(draft.news.byToken).flat().map((h) => ({ source: h.source, title: h.title })) : undefined,
   };
 }
 
@@ -77,7 +79,7 @@ export async function run({
     console.log(`Draft:\n${text}\n`);
 
     // 2. validate (HistoryError propagates: it's infrastructure, not text)
-    const validation = await validate(text, theme, rawData);
+    const validation = await validate(text, theme, rawData, { news: draft.news });
     if (!validation.valid) {
       lastFailure = `validation failed: ${validation.reason}`;
       console.error(`Validation failed: ${validation.reason}`);
