@@ -46,12 +46,14 @@ export function anomalyPromptBlock(data) {
 }
 
 const CONTEXT_WORDS = /\b(?:volume|usdt|outlier|unusual|rare|thin|liquidity)\b/i;
-const CAUSE_WORDS = /\b(?:because|due\s+to|driven\s+by|thanks\s+to|news|catalyst|announcement|partnership|listing|rumou?rs?)\b/i;
+const CAUSE_CONNECTIVES = /\b(?:because|due\s+to|driven\s+by|thanks\s+to)\b/i;
+// Allowed only when an attributed headline for the token was supplied (news-guard.mjs).
+const CAUSE_TOPICS = /\b(?:news|catalyst|announcement|partnership|listing|rumou?rs?)\b/i;
 
 /**
  * @returns {{ ok: true } | { ok: false, reason: string }}
  */
-export function checkAnomaly(text, rawData) {
+export function checkAnomaly(text, rawData, { allowNews = false } = {}) {
   const mentioned = extremeRows(rawData).filter((r) => text.includes(r.cashtag));
   if (mentioned.length === 0) return { ok: true };
 
@@ -62,7 +64,7 @@ export function checkAnomaly(text, rawData) {
   if (!CONTEXT_WORDS.test(text)) {
     return { ok: false, reason: "Extreme mover posted without volume/outlier context" };
   }
-  const cause = text.match(CAUSE_WORDS);
+  const cause = text.match(CAUSE_CONNECTIVES) ?? (allowNews ? null : text.match(CAUSE_TOPICS));
   if (cause) {
     return { ok: false, reason: `Extreme mover with an unsupported cause ("${cause[0]}")` };
   }
