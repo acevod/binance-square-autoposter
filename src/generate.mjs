@@ -282,7 +282,7 @@ async function callGroq(prompt) {
       Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "openai/gpt-oss-120b",
+      model: GROQ_MODEL,
       messages: [{ role: "user", content: prompt }],
       // gpt-oss-120b always reasons — it can't be turned off — and
       // reasoning tokens share the same max_tokens budget as the final
@@ -322,7 +322,7 @@ async function callGroq(prompt) {
 async function callGemini(prompt) {
   // API key goes in a header, not the URL, so it can never end up in logs.
   const res = await fetchWithTimeout(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
@@ -352,12 +352,17 @@ async function callGemini(prompt) {
   return content;
 }
 
+const GROQ_MODEL = "openai/gpt-oss-120b";
+const GEMINI_MODEL = "gemini-2.5-flash";
+
+// Returns the text plus which provider/model actually produced it, so the
+// history entry can record it (a fallback to Gemini is otherwise invisible).
 async function callLLM(prompt) {
   try {
-    return await callGroq(prompt);
+    return { text: await callGroq(prompt), provider: "groq", model: GROQ_MODEL };
   } catch (err) {
     console.error(`Groq failed, falling back to Gemini: ${err.message}`);
-    return await callGemini(prompt);
+    return { text: await callGemini(prompt), provider: "gemini", model: GEMINI_MODEL };
   }
 }
 
@@ -405,7 +410,8 @@ export async function generatePost() {
   }
   const fetchedAt = new Date().toISOString();
   const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data) + anomalyPromptBlock(data);
-  const text = sanitizeText(await callLLM(prompt));
+  const llm = await callLLM(prompt);
+  const text = sanitizeText(llm.text);
 
   return {
     theme: theme.id,
@@ -414,6 +420,8 @@ export async function generatePost() {
     rawData: data,
     fetchedAt,
     promptVersion: PROMPT_VERSION,
+    provider: llm.provider,
+    model: llm.model,
   };
 }
 
