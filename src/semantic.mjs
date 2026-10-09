@@ -177,6 +177,16 @@ function checkRegime(text, facts) {
   return problems;
 }
 
+const SAYS_SUPPORTS = /\b(?:data|numbers|tape|market)\s+(?:backs?|supports?|confirms?)\b|\bbacks?\s+(?:it\s+)?up\b|\b(?:supports?|confirms?)\s+the\s+(?:headline|story|narrative)\b/i;
+const SAYS_CONTRADICTS = /\bcontradicts?\b|\b(?:doesn'?t|does\s+not|didn'?t)\s+(?:back|support|match|confirm)\b|\bat\s+odds\b|\bruns?\s+against\b|\bpush(?:es)?\s+back\b|\bnot\s+what\s+the\s+data\b/i;
+
+function checkNarrative(text, facts) {
+  const problems = checkRegime(text, facts);
+  if (SAYS_SUPPORTS.test(text) && facts.agreement !== "supports") problems.push(`says the data backs the headline, but the verdict is ${facts.agreement}`);
+  if (SAYS_CONTRADICTS.test(text) && facts.agreement !== "contradicts") problems.push(`says the data contradicts the headline, but the verdict is ${facts.agreement}`);
+  return problems;
+}
+
 /**
  * @returns {{ ok: true } | { ok: false, reason: string }}
  */
@@ -194,6 +204,7 @@ export function checkSemantics(text, theme, rawData) {
   if (facts?.kind === "ratio") problems.push(...checkRatio(text, facts));
   if (facts?.kind === "relative") problems.push(...checkRelative(text, facts));
   if (facts?.kind === "regime") problems.push(...checkRegime(text, facts));
+  if (facts?.kind === "narrative") problems.push(...checkNarrative(text, facts));
 
   if (problems.length > 0) {
     return { ok: false, reason: [...new Set(problems)].slice(0, 3).join("; ") };
