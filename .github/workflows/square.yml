@@ -37,6 +37,7 @@ jobs:
           BINANCE_SQUARE_OPENAPI_KEY: ${{ secrets.BINANCE_SQUARE_OPENAPI_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEWS_CONTEXT: ${{ vars.NEWS_CONTEXT }} # optional: "on" adds headline context to some themes
           BSTOCKS_EXTRA: ${{ vars.BSTOCKS_EXTRA }} # optional, e.g. AAPLBUSDT=Apple,MSFTBUSDT=Microsoft
         run: node src/run.mjs
 
