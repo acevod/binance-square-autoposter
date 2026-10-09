@@ -45,3 +45,29 @@ test("selection is uniform (Fisher-Yates), each symbol ~42.9% of picks", async (
     assert.ok(pct > 39.5 && pct < 46.5, `${tag} picked ${pct.toFixed(1)}% (expected ~42.9%)`);
   }
 });
+
+import { parseExtraBStocks } from "../src/sources/tokenized-stocks.mjs";
+
+test("parseExtraBStocks: parses pairs, names optional, rejects unsafe or malformed symbols", () => {
+  const r = parseExtraBStocks("aaplbusdt=Apple, MSFTBUSDT , BAD/../x=Evil, USDT, TSLA?x=1USDT, NOUSD=Nope");
+  assert.deepEqual(Object.keys(r).sort(), ["AAPLBUSDT", "MSFTBUSDT"]);
+  assert.equal(r.AAPLBUSDT, "Apple");
+  assert.equal(r.MSFTBUSDT, undefined);
+  assert.deepEqual(parseExtraBStocks(undefined), {});
+});
+
+test("BSTOCKS_EXTRA symbols join the pool (no code change needed)", async () => {
+  process.env.BSTOCKS_EXTRA = "AAPLBUSDT=Apple";
+  try {
+    mockHealthy(new Set(["AAPLBUSDT"]));
+    const r = await getTokenizedStocksSnapshot({ count: 1 }).catch(() => null);
+    // only AAPL is healthy; with MIN_TOKENS=2 this must throw, proving it was in the pool but alone
+    assert.equal(r, null);
+    mockHealthy(new Set(["AAPLBUSDT", "NVDABUSDT"]));
+    const both = await getTokenizedStocksSnapshot();
+    assert.deepEqual(both.map((t) => t.cashtag).sort(), ["$AAPLB", "$NVDAB"]);
+    assert.equal(both.find((t) => t.cashtag === "$AAPLB").name, "Apple");
+  } finally {
+    delete process.env.BSTOCKS_EXTRA;
+  }
+});
