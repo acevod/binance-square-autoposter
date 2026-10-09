@@ -17,6 +17,7 @@ import { extractCashtags } from "./cashtags.mjs";
 import { checkSemantics } from "./semantic.mjs";
 import { checkFatigue } from "./fatigue.mjs";
 import { checkAnomaly } from "./anomaly.mjs";
+import { checkNoUrls, checkNews, headlineNumberSources } from "./news-guard.mjs";
 import { checkGrounding } from "./grounding.mjs";
 
 const MAX_LENGTH = 1850; // confirmed limit is 1900; prompts target 1600
@@ -153,7 +154,7 @@ export async function getRecentThemes(n = 4) {
  * GROUNDING_MODE=warn logs grounding failures instead of rejecting, useful
  * while rolling this out.
  */
-export async function validatePost(text, theme, rawData) {
+export async function validatePost(text, theme, rawData, ctx = {}) {
   if (!text || typeof text !== "string") {
     return { valid: false, reason: "Empty or non-string output from LLM" };
   }
@@ -179,6 +180,10 @@ export async function validatePost(text, theme, rawData) {
   if (/—/.test(trimmed) || /\s–\s/.test(trimmed)) {
     return { valid: false, reason: "Contains an em/en dash used as a separator, forbidden by style rules" };
   }
+
+  // No links or web addresses in any post (house rule), news context or not.
+  const urls = checkNoUrls(trimmed);
+  if (!urls.ok) return { valid: false, reason: urls.reason };
 
   // Directional/predictive wording that reads like a call, even when framed
   // as "watching". Real drafts said "something brewing", "keep an eye on the
@@ -216,7 +221,9 @@ export async function validatePost(text, theme, rawData) {
   }
 
   if (rawData !== undefined) {
-    const grounding = checkGrounding(trimmed, theme, rawData);
+    // numbers written in a supplied headline count as sourced
+    const groundingData = ctx.news ? [rawData, { headlineNumbers: headlineNumberSources(ctx.news) }] : rawData;
+    const grounding = checkGrounding(trimmed, theme, groundingData);
     if (!grounding.ok) {
       if (process.env.GROUNDING_MODE === "warn") {
         console.warn(`[grounding:warn] ${grounding.reason}`);
@@ -238,9 +245,12 @@ export async function validatePost(text, theme, rawData) {
   }
 
   if (rawData !== undefined) {
-    const anomaly = checkAnomaly(trimmed, rawData);
+    const anomaly = checkAnomaly(trimmed, rawData, { allowNews: Boolean(ctx.news) });
     if (!anomaly.ok) return { valid: false, reason: anomaly.reason };
   }
+
+  const newsCheck = checkNews(trimmed, ctx.news);
+  if (!newsCheck.ok) return { valid: false, reason: newsCheck.reason };
 
   const history = await loadHistory();
 
