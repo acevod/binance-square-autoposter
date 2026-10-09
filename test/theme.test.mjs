@@ -47,12 +47,13 @@ test("selectTheme never returns a time-inappropriate theme, over every hour and 
 test("recent themes are avoided", () => {
   for (let i = 0; i < 100; i++) {
     const t = selectTheme(["leaders-laggards", "breakout-watch", "quiet-movers", "relative-strength"], wib(13, 17));
-    assert.equal(t.id, "tokenized-stocks"); // the only fitting, non-recent theme at midday
+    // the only fitting, non-recent themes at midday
+    assert.ok(["tokenized-stocks", "market-regime"].includes(t.id), t.id);
   }
 });
 
 test("if every fitting theme is recent, repeating beats a mistimed theme", () => {
-  const all = ["leaders-laggards", "breakout-watch", "quiet-movers", "relative-strength", "tokenized-stocks", "morning-brief", "daily-recap"];
+  const all = ["leaders-laggards", "breakout-watch", "quiet-movers", "relative-strength", "tokenized-stocks", "morning-brief", "daily-recap", "market-regime"];
   const t = selectTheme(all, wib(13, 17));
   assert.equal(themeFitsTime(t.id, wib(13, 17)), true);
 });
