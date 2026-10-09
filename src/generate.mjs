@@ -8,6 +8,7 @@ import {
   getBreakoutWatch,
   getQuietMovers,
   getRelativeStrength,
+  getMarketRegime,
 } from "./sources/market.mjs";
 import { getTokenizedStocksSnapshot } from "./sources/tokenized-stocks.mjs";
 import { getRecentThemes } from "./validate.mjs";
@@ -29,7 +30,7 @@ export const PROMPT_VERSION = "2.0";
 
 // ---------------------------------------------------------------------------
 // Theme registry — uniform random pick among themes that fit the time of day
-// (see THEME_HOURS_WIB) and weren't used in the last few posts. All 7 themes
+// (see THEME_HOURS_WIB) and weren't used in the last few posts. All 8 themes
 // pull from the same safe, Binance-listed data source, so there's no reason
 // to favor some over others.
 // ---------------------------------------------------------------------------
@@ -41,6 +42,7 @@ const THEMES = [
   { id: "relative-strength", fetch: () => getRelativeStrength(), label: "Relative Strength Check" },
   { id: "tokenized-stocks", fetch: () => getTokenizedStocksSnapshot(), label: "Tokenized Stocks Corner" },
   { id: "daily-recap", fetch: () => getMarketSnapshot(), label: "Daily Recap" },
+  { id: "market-regime", fetch: () => getMarketRegime(), label: "Market Regime" },
 ];
 
 const RECENT_THEMES_TO_AVOID = 4;
@@ -237,6 +239,27 @@ flow data this doesn't measure. Say "BTC is outperforming the basket" or
 "ETH is gaining relative strength against BTC" instead — describe which is
 doing better, not where money is supposedly moving. Keep it under 1600
 characters.
+${STYLE_RULES}`,
+
+  "market-regime": (data) => `
+You are a Binance Square crypto analyst. Write a post that reads the market's
+current "regime" over the past 24 hours using ONLY this data:
+${JSON.stringify(data, null, 2)}
+
+"direction" says how broad the move is: "broad-up" or "broad-down" means at
+least 70% of the alts moved the same way ("breadthUpPct" is the share that are
+up); "mixed" means no clear majority. "leadership" compares the median alt with
+BTC: "alt-led" means the typical alt is ahead of BTC by 1 point or more,
+"btc-led" means BTC is ahead by 1 point or more, "in-line" means they are
+close. "medianRangePct" is the typical 24h high-low range of the alts.
+The point of the post is the combination, e.g. a move that is broad but
+BTC-led reads differently from one that is narrow and alt-led. Explain what
+the combination means for how the day looked, and keep it to what the data
+shows: this is a 24-hour snapshot, not a forecast and not capital flow, so
+do not say "risk-on", "risk-off", "money is rotating" or predict what comes
+next. Use the direction and leadership labels as given. Mention at most
+$BTC plus nothing else by cashtag (the alts are described as a group).
+Keep it under 1400 characters.
 ${STYLE_RULES}`,
 
   "tokenized-stocks": (data) => `
