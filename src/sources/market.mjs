@@ -307,6 +307,49 @@ export async function getRelativeStrength({ basketSize = 20 } = {}) {
   };
 }
 
+/**
+ * Theme 8 - Market Regime.
+ * Classifies the last 24h from the basket in code, so the LLM explains labels
+ * instead of inventing them: direction (how broad the move is) and leadership
+ * (whether the typical alt is ahead of or behind BTC). Descriptive only, no
+ * forecast. Thresholds are deliberately plain and live here, not in a prompt.
+ */
+export const BROAD_BREADTH_PCT = 70; // share of alts moving the same way to call a move "broad"
+export const LEADERSHIP_SPREAD_PCT = 1; // median-alt minus BTC change needed to call someone "leading"
+
+const round2 = (n) => Math.round(n * 100) / 100;
+
+export function buildRegime(basket) {
+  const btc = basket.find((t) => t.symbol === "BTCUSDT");
+  const alts = basket.filter((t) => t.symbol !== "BTCUSDT");
+  if (!btc) throw new Error("market-regime: BTC missing from basket");
+  if (alts.length < 5) throw new Error("market-regime: too few alts to classify");
+
+  const altsMedian = median(alts.map((t) => t.priceChangePercent));
+  const breadthUpPct = Math.round((alts.filter((t) => t.priceChangePercent > 0).length / alts.length) * 100);
+  const medianRangePct = median(alts.map((t) => ((t.highPrice - t.lowPrice) / t.lastPrice) * 100));
+  const spread = altsMedian - btc.priceChangePercent;
+
+  const direction =
+    breadthUpPct >= BROAD_BREADTH_PCT ? "broad-up" : breadthUpPct <= 100 - BROAD_BREADTH_PCT ? "broad-down" : "mixed";
+  const leadership =
+    spread >= LEADERSHIP_SPREAD_PCT ? "alt-led" : spread <= -LEADERSHIP_SPREAD_PCT ? "btc-led" : "in-line";
+
+  return {
+    btcChangePercent: round2(btc.priceChangePercent),
+    altsMedianChangePercent: round2(altsMedian),
+    altsCount: alts.length,
+    breadthUpPct,
+    medianRangePct: round2(medianRangePct),
+    direction,
+    leadership,
+  };
+}
+
+export async function getMarketRegime({ basketSize = 20 } = {}) {
+  return buildRegime(await getDynamicBasket(basketSize));
+}
+
 // Standalone test: `node src/sources/market.mjs`
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [snapshot, leadersLaggards, breakout, quiet, relativeStrength] = await Promise.all([
