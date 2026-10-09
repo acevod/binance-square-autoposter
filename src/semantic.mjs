@@ -156,13 +156,20 @@ function checkRelative(text, facts) {
 
 const ALT_LED = /\balt[-\s]?led\b/i;
 const BTC_LED = /\b(?:btc|bitcoin)[-\s]?led\b/i;
+// "BTC is leading the drop" is read both ways (fell the most / held up best),
+// so it is rejected outright instead of being judged.
+const LED_THE_FALL = /\b(?:led|leading|leads?)\s+the\s+(?:drop|decline|sell-?off|fall|losses|dump|slide)\b/i;
+// Internal label tokens must be written as plain words, not pasted into prose.
+const LABEL_LEAK = /\b(?:broad-up|broad-down|alts-ahead|btc-ahead|in-line)\b/i;
 const BROAD_UP = /\b(?:broad|market-?wide|across\s+the\s+board)\s+(?:rally|rebound|gains?|strength|green)\b/i;
 const BROAD_DOWN = /\b(?:broad|market-?wide|across\s+the\s+board)\s+(?:sell-?off|decline|losses|weakness|red|drop)\b/i;
 
 function checkRegime(text, facts) {
   const problems = checkRelative(text, facts);
-  if (ALT_LED.test(text) && facts.leadership !== "alt-led") problems.push(`calls it alt-led, but leadership is ${facts.leadership}`);
-  if (BTC_LED.test(text) && facts.leadership !== "btc-led") problems.push(`calls it BTC-led, but leadership is ${facts.leadership}`);
+  if (LABEL_LEAK.test(text)) problems.push("pastes an internal label (e.g. broad-down) into the post; say it in plain words");
+  if (LED_THE_FALL.test(text)) problems.push('says someone "led the drop"; ambiguous, say who fell more or who held up better');
+  if (ALT_LED.test(text) && facts.leadership !== "alts-ahead") problems.push(`calls it alt-led, but leadership is ${facts.leadership}`);
+  if (BTC_LED.test(text) && facts.leadership !== "btc-ahead") problems.push(`calls it BTC-led, but leadership is ${facts.leadership}`);
   if (BROAD_UP.test(text) && facts.direction !== "broad-up") problems.push(`calls it a broad rally, but direction is ${facts.direction} (${facts.breadthUpPct}% of alts up)`);
   if (BROAD_DOWN.test(text) && facts.direction !== "broad-down") problems.push(`calls it a broad sell-off, but direction is ${facts.direction} (${facts.breadthUpPct}% of alts up)`);
   return problems;
