@@ -168,3 +168,14 @@ test("regime: a plain-words read of the same day is accepted", () => {
   const text = "$BTC slipped 0.56%, but the typical alt fell 2.95%, so BTC held up better. Only 16% of the 19 alts finished green, a broad decline.";
   assert.equal(checkSemantics(text, "market-regime", REGIME_DOWN).ok, true);
 });
+
+test("rejects 'trade 24/7 on Binance Square' and a wrong 'most volatile' (real failed drafts, 9 Oct)", () => {
+  const data = [
+    { cashtag: "$SKHYB", lastPriceUSDT: 173.47, priceChangePercent: -1.722, highPrice: 177.2, lowPrice: 167.26, volumeUSDT: 3.7e6 },
+    { cashtag: "$BNCB", lastPriceUSDT: 5.24, priceChangePercent: -1.132, highPrice: 5.33, lowPrice: 4.95, volumeUSDT: 5.09e6 },
+  ];
+  const r = checkSemantics("$SKHYB took the biggest hit, and it's the most volatile of the two. Both trade 24/7 on Binance Square.", "tokenized-stocks", data);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /\$SKHYB called the widest range/);
+  assert.match(r.reason, /Binance Square/);
+});
