@@ -34,14 +34,16 @@ function mentionedAssets(clause, known) {
 }
 
 // ---- claim patterns ------------------------------------------------------
-const RANGE_MOST = /\b(?:widest|broadest|wildest|biggest|largest)\s+(?:\w+\s+){0,2}(?:swing|range|band|spread)\b|\brange\s+stole\s+the\s+show\b/i;
-const RANGE_LEAST = /\b(?:narrowest|tightest|smallest)\s+(?:\w+\s+){0,2}(?:swing|range|band|spread)\b/i;
+const RANGE_MOST = /\b(?:widest|broadest|wildest|biggest|largest)\s+(?:\w+\s+){0,2}(?:swing|range|band|spread)\b|\bmost\s+volatile\b|\brange\s+stole\s+the\s+show\b/i;
+const RANGE_LEAST = /\b(?:narrowest|tightest|smallest)\s+(?:\w+\s+){0,2}(?:swing|range|band|spread)\b|\bleast\s+volatile\b/i;
 const VOLUME_MOST = /\b(?:biggest|largest|heftiest|highest|heaviest|most)\s+(?:\w+\s+){0,2}(?:volume|trade\s+flow|turnover)\b|\bpumped\s+the\s+most\s+volume\b|\bchewing\s+through\s+the\s+most\s+volume\b/i;
 const VOLUME_QUOTE = /\b(?:dollar|usdt|quote|notional)\b/i;
 const MOVE_MOST = /\b(?:biggest|largest|sharpest)\s+(?:\w+\s+){0,2}move\b/i;
 const DROP_MOST = /\b(?:biggest|largest|sharpest|steepest)\s+(?:\w+\s+){0,2}(?:drop|fall|loss|hit|decline)\b|\bdropped\s+the\s+hardest\b|\bfell\s+the\s+hardest\b/i;
 const GAIN_MOST = /\b(?:biggest|largest|sharpest)\s+(?:\w+\s+){0,2}(?:gain|jump|rise|rally)\b/i;
 const NO_DATA_CLAIMS = /\b(?:trade\s+count|number\s+of\s+trades|trades\s+count)\b/i;
+// Binance Square is the social feed, not where assets trade.
+const WRONG_VENUE = /\btrad(?:e|es|ed|ing)\b[^.]{0,40}\bon\s+binance\s+square\b/i;
 const TIMING_CLAIMS = /\b(?:through(?:out)?\s+the\s+night|overnight|after[-\s]?hours|off[-\s]?hours|outside\s+(?:of\s+)?(?:regular\s+|normal\s+|nyse\s+|market\s+|trading\s+)+hours|after\s+(?:the\s+)?(?:regular\s+)?market\s+close|while\s+(?:regular\s+|us\s+|wall\s+street\s+)?markets?\s+(?:were|are)\s+(?:asleep|closed))\b/i;
 
 const FRACTIONS = [
@@ -182,6 +184,7 @@ export function checkSemantics(text, theme, rawData) {
   const problems = [];
 
   if (NO_DATA_CLAIMS.test(text)) problems.push("mentions trade counts, which the data does not contain");
+  if (WRONG_VENUE.test(text)) problems.push("says assets trade on Binance Square (Square is the social feed; they trade on Binance)");
   if (theme === "tokenized-stocks" && TIMING_CLAIMS.test(text)) {
     problems.push("claims activity happened overnight/after hours; 24h volume does not show when it happened");
   }
