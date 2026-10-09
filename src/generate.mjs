@@ -15,6 +15,7 @@ import { getRecentThemes } from "./validate.mjs";
 import { fetchWithTimeout, TIMEOUTS } from "./http.mjs";
 import { factsPromptBlock } from "./facts.mjs";
 import { anomalyPromptBlock } from "./anomaly.mjs";
+import { NEWS_THEMES, newsEnabled, getNewsContext, newsPromptBlock } from "./sources/news.mjs";
 
 export const PROMPT_VERSION = "2.0";
 
@@ -455,7 +456,9 @@ export async function generatePost() {
     throw new Error(`No source data for themes: ${skipped.join(", ")}`);
   }
   const fetchedAt = new Date().toISOString();
-  const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data) + anomalyPromptBlock(data);
+  // Optional headline context (NEWS_CONTEXT=on); null when off, empty or failing.
+  const news = newsEnabled() && NEWS_THEMES.has(theme.id) ? await getNewsContext(data) : null;
+  const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data) + anomalyPromptBlock(data) + newsPromptBlock(news);
   const llm = await callLLM(prompt);
   const text = sanitizeText(llm.text);
 
@@ -464,6 +467,7 @@ export async function generatePost() {
     themeLabel: theme.label,
     text,
     rawData: data,
+    news,
     fetchedAt,
     promptVersion: PROMPT_VERSION,
     provider: llm.provider,
