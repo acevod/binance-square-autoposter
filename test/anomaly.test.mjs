@@ -42,3 +42,10 @@ test("prompt block only appears when an extreme mover exists", () => {
 test("the real 6 Oct RLC post would have been rejected (hype wording)", () => {
   assert.equal(checkFatigue("$RLC exploded, up about 126 % to $0.8624").ok, false);
 });
+
+test("bStock rows: volumeUSDT counts as volume (a liquid extreme move is not 'thin')", () => {
+  const liquid = { cashtag: "$TSLAB", priceChangePercent: 35, volumeUSDT: 50e6 };
+  const thin = { cashtag: "$TSLAB", priceChangePercent: 35, volumeUSDT: 2e6 };
+  assert.equal(isThinExtreme(liquid), false);
+  assert.equal(isThinExtreme(thin), true);
+});
