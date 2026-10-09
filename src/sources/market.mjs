@@ -311,7 +311,7 @@ export async function getRelativeStrength({ basketSize = 20 } = {}) {
  * Theme 8 - Market Regime.
  * Classifies the last 24h from the basket in code, so the LLM explains labels
  * instead of inventing them: direction (how broad the move is) and leadership
- * (whether the typical alt is ahead of or behind BTC). Descriptive only, no
+ * (whether the typical alt did better or worse than BTC; on a down day "ahead" means it fell LESS). Descriptive only, no
  * forecast. Thresholds are deliberately plain and live here, not in a prompt.
  */
 export const BROAD_BREADTH_PCT = 70; // share of alts moving the same way to call a move "broad"
@@ -333,7 +333,7 @@ export function buildRegime(basket) {
   const direction =
     breadthUpPct >= BROAD_BREADTH_PCT ? "broad-up" : breadthUpPct <= 100 - BROAD_BREADTH_PCT ? "broad-down" : "mixed";
   const leadership =
-    spread >= LEADERSHIP_SPREAD_PCT ? "alt-led" : spread <= -LEADERSHIP_SPREAD_PCT ? "btc-led" : "in-line";
+    spread >= LEADERSHIP_SPREAD_PCT ? "alts-ahead" : spread <= -LEADERSHIP_SPREAD_PCT ? "btc-ahead" : "in-line";
 
   return {
     btcChangePercent: round2(btc.priceChangePercent),
