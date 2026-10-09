@@ -99,3 +99,35 @@ test("ratio uses hourly klines for BOTH sides (current range comes from klines, 
   assert.equal(r.length, 1);
   assert.equal(Math.round(r[0].ratio * 100) / 100, 2);
 });
+
+import { buildRegime } from "../src/sources/market.mjs";
+
+const asset = (symbol, change, range = 4) => ({ symbol, lastPrice: 100, priceChangePercent: change, highPrice: 100 + range / 2, lowPrice: 100 - range / 2, quoteVolume: 1e9 });
+
+test("buildRegime: broad-up and alt-led", () => {
+  const basket = [asset("BTCUSDT", 1), ...[3, 3.5, 2.8, 3.2, 2.5, 4, 3.1, 2.9, -0.5, 3.3].map((c, i) => asset(`A${i}USDT`, c))];
+  const r = buildRegime(basket);
+  assert.equal(r.direction, "broad-up");
+  assert.equal(r.leadership, "alt-led");
+  assert.equal(r.breadthUpPct, 90);
+  assert.equal(r.altsCount, 10);
+});
+
+test("buildRegime: broad-down and btc-led", () => {
+  const basket = [asset("BTCUSDT", -0.5), ...[-3, -2.5, -3.2, -2, -2.8, 0.2, -3.1].map((c, i) => asset(`A${i}USDT`, c))];
+  const r = buildRegime(basket);
+  assert.equal(r.direction, "broad-down");
+  assert.equal(r.leadership, "btc-led");
+});
+
+test("buildRegime: mixed and in-line", () => {
+  const basket = [asset("BTCUSDT", 0.5), ...[1, -1, 0.8, -0.9, 0.6, -0.4].map((c, i) => asset(`A${i}USDT`, c))];
+  const r = buildRegime(basket);
+  assert.equal(r.direction, "mixed");
+  assert.equal(r.leadership, "in-line");
+});
+
+test("buildRegime: throws without BTC or with too few alts (generate retries another theme)", () => {
+  assert.throws(() => buildRegime([asset("AAAUSDT", 1), asset("BBBUSDT", 1)]), /BTC missing/);
+  assert.throws(() => buildRegime([asset("BTCUSDT", 1), asset("AAAUSDT", 1)]), /too few alts/);
+});
