@@ -154,6 +154,20 @@ function checkRelative(text, facts) {
   return problems;
 }
 
+const ALT_LED = /\balt[-\s]?led\b/i;
+const BTC_LED = /\b(?:btc|bitcoin)[-\s]?led\b/i;
+const BROAD_UP = /\b(?:broad|market-?wide|across\s+the\s+board)\s+(?:rally|rebound|gains?|strength|green)\b/i;
+const BROAD_DOWN = /\b(?:broad|market-?wide|across\s+the\s+board)\s+(?:sell-?off|decline|losses|weakness|red|drop)\b/i;
+
+function checkRegime(text, facts) {
+  const problems = checkRelative(text, facts);
+  if (ALT_LED.test(text) && facts.leadership !== "alt-led") problems.push(`calls it alt-led, but leadership is ${facts.leadership}`);
+  if (BTC_LED.test(text) && facts.leadership !== "btc-led") problems.push(`calls it BTC-led, but leadership is ${facts.leadership}`);
+  if (BROAD_UP.test(text) && facts.direction !== "broad-up") problems.push(`calls it a broad rally, but direction is ${facts.direction} (${facts.breadthUpPct}% of alts up)`);
+  if (BROAD_DOWN.test(text) && facts.direction !== "broad-down") problems.push(`calls it a broad sell-off, but direction is ${facts.direction} (${facts.breadthUpPct}% of alts up)`);
+  return problems;
+}
+
 /**
  * @returns {{ ok: true } | { ok: false, reason: string }}
  */
@@ -169,6 +183,7 @@ export function checkSemantics(text, theme, rawData) {
   if (facts?.kind === "snapshot") problems.push(...checkSnapshot(text, facts));
   if (facts?.kind === "ratio") problems.push(...checkRatio(text, facts));
   if (facts?.kind === "relative") problems.push(...checkRelative(text, facts));
+  if (facts?.kind === "regime") problems.push(...checkRegime(text, facts));
 
   if (problems.length > 0) {
     return { ok: false, reason: [...new Set(problems)].slice(0, 3).join("; ") };
