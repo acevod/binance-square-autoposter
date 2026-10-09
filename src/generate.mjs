@@ -89,10 +89,15 @@ export function selectTheme(recent, now = new Date(), random = Math.random) {
   return pool[Math.floor(random() * pool.length)];
 }
 
-async function pickTheme() {
+async function pickTheme(alsoAvoid = []) {
   const recent = await getRecentThemes(RECENT_THEMES_TO_AVOID);
-  return selectTheme(recent);
+  return selectTheme([...recent, ...alsoAvoid]);
 }
+
+// A theme with no qualifying data (e.g. nothing is unusually quiet today) is
+// not an error worth a whole attempt and a 10 s wait: move on to another theme
+// right away, without calling the LLM.
+const MAX_THEME_SKIPS = 4;
 
 // ---------------------------------------------------------------------------
 // Shared style rules — anti-"AI-sounding" instructions, cashtag format, etc.
@@ -148,6 +153,10 @@ Style rules (must follow):
 - Only mention metrics that appear in the supplied data. Do NOT bring in
   open interest, funding rates, liquidations, on-chain flows, or anything
   else that isn't in the JSON above, even as a "thing to watch".
+- Never use hype words: "exploded", "rocket", "moon", "parabolic",
+  "skyrocketed", "bloodbath". Use plain verbs ("jumped", "dropped", "rose").
+  Do not end on a mood phrase ("nothing wild", "quiet grind", "calm day");
+  end on a concrete fact from the data.
 - No predictions or directional calls ("short squeeze brewing", "reversal
   incoming", "likely to break out"). Describe what already happened.
 - Never echo these style instructions inside the post (no "just the
@@ -165,7 +174,8 @@ using ONLY this data:
 ${JSON.stringify(data, null, 2)}
 
 Cover price action for BTC, ETH, BNB over the past 24 hours: what changed
-and what stood out (biggest move, widest range, heaviest volume). Describe
+and what stood out (biggest move, widest range as a % of price, heaviest
+volume in USDT). Describe
 what happened only, nothing about what comes next. Keep it under 1600
 characters.
 ${STYLE_RULES}`,
@@ -249,16 +259,19 @@ ${JSON.stringify(data, null, 2)}
 "direction" says how broad the move is: "broad-up" or "broad-down" means at
 least 70% of the alts moved the same way ("breadthUpPct" is the share that are
 up); "mixed" means no clear majority. "leadership" compares the median alt with
-BTC: "alt-led" means the typical alt is ahead of BTC by 1 point or more,
-"btc-led" means BTC is ahead by 1 point or more, "in-line" means they are
-close. "medianRangePct" is the typical 24h high-low range of the alts.
-The point of the post is the combination, e.g. a move that is broad but
-BTC-led reads differently from one that is narrow and alt-led. Explain what
-the combination means for how the day looked, and keep it to what the data
-shows: this is a 24-hour snapshot, not a forecast and not capital flow, so
-do not say "risk-on", "risk-off", "money is rotating" or predict what comes
-next. Use the direction and leadership labels as given. Mention at most
-$BTC plus nothing else by cashtag (the alts are described as a group).
+BTC: "alts-ahead" means the typical alt did better than BTC by 1 point or
+more, "btc-ahead" means BTC did better by 1 point or more, "in-line" means
+they are close. "Better" is about the number: on a down day it means fell
+LESS, so say "held up better" or "fell less", never "led the drop".
+"medianRangePct" is the typical 24h high-low range of the alts.
+The point of the post is the combination, e.g. a decline that is broad but
+where BTC held up better reads differently from a narrow one where alts held
+up better. Explain what the combination means for how the day looked, and
+keep it to what the data shows: this is a 24-hour snapshot, not a forecast
+and not capital flow, so do not say "risk-on", "risk-off", "money is
+rotating" or predict what comes next. Say the labels in plain words (a broad
+decline, a mixed day); never paste the label tokens themselves into the post.
+Mention $BTC by cashtag and nothing else (the alts are described as a group).
 Keep it under 1400 characters.
 ${STYLE_RULES}`,
 
@@ -426,10 +439,19 @@ function sanitizeText(text) {
 // Main entry point.
 // ---------------------------------------------------------------------------
 export async function generatePost() {
-  const theme = await pickTheme();
-  const data = await theme.fetch();
-  if (Array.isArray(data) && data.length === 0) {
-    throw new Error(`No source data for theme "${theme.id}"`);
+  const skipped = [];
+  let theme;
+  let data;
+  for (let i = 0; i < MAX_THEME_SKIPS; i++) {
+    theme = await pickTheme(skipped);
+    data = await theme.fetch();
+    if (!(Array.isArray(data) && data.length === 0)) break;
+    console.log(`Theme "${theme.id}" has no qualifying data today, trying another theme.`);
+    skipped.push(theme.id);
+    data = null;
+  }
+  if (data == null) {
+    throw new Error(`No source data for themes: ${skipped.join(", ")}`);
   }
   const fetchedAt = new Date().toISOString();
   const prompt = THEME_PROMPTS[theme.id](data) + factsPromptBlock(theme.id, data) + anomalyPromptBlock(data);
