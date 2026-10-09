@@ -285,9 +285,10 @@ by hitting the real errors during development:
   theme leans on the "trades 24/7" angle instead.
 - **Rolling 24h vs calendar day**: `ticker/24hr` is a rolling window ending
   now, not "since 00:00 UTC". Prompts say "past 24 hours" rather than
-  "today" for that reason. Themes 3-4 also compare that rolling range
-  against daily-candle averages, which is directionally useful but not a
-  strict like-for-like comparison.
+  "today" for that reason. Themes 3-4 compare like with like: hourly candles
+  are cut into consecutive 24h windows counted back from now, and the latest
+  window is compared with the average of the 7 before it (not with UTC
+  calendar-day candles, which are a different window).
 - **`data/posts.json` doesn't exist on first run** (or after a
   validation-only failure): a missing file is treated as empty history and
   created on first write, and the workflow's commit step checks the file
