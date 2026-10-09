@@ -97,8 +97,16 @@ export function buildRegimeFacts(data) {
   };
 }
 
+/** Facts for data-vs-narrative: regime facts plus the headline agreement. */
+export function buildNarrativeFacts(data) {
+  const regime = buildRegimeFacts(data?.regime);
+  if (!regime || !data.agreement) return null;
+  return { ...regime, kind: "narrative", agreement: data.agreement, headlineTone: data.headlineTone };
+}
+
 /** Picks the right builder for the data shape. */
 export function buildFacts(theme, data) {
+  if (theme === "data-vs-narrative") return buildNarrativeFacts(data);
   if (theme === "market-regime") return buildRegimeFacts(data);
   if (theme === "relative-strength") return buildRelativeFacts(data);
   if (theme === "breakout-watch" || theme === "quiet-movers") return buildRatioFacts(data);
@@ -126,7 +134,7 @@ export function factsPromptBlock(theme, data) {
   } else if (f.kind === "relative") {
     lines.push(`- BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)}: ${f.btcAheadOfAlts ? "BTC is ahead of the median alt" : f.altsAheadOfBtc ? "the median alt is ahead of BTC" : "level"}`);
   }
-  if (f.kind === "regime") {
+  if (f.kind === "regime" || f.kind === "narrative") {
     const dir = { "broad-up": "a broad rise", "broad-down": "a broad decline", mixed: "a mixed day" }[f.direction];
     const lead = {
       "alts-ahead": "the typical alt did BETTER than BTC (on a down day: fell less)",
@@ -137,6 +145,14 @@ export function factsPromptBlock(theme, data) {
     lines.push(`- relative: ${lead} (BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)})`);
     lines.push('- say these in plain words; never write the tokens "broad-up", "broad-down", "alts-ahead", "btc-ahead" or "in-line", and never say "led the drop" (ambiguous)');
     lines.push("- do not call it risk-on/risk-off (the data has no sentiment or flow)");
+    if (f.kind === "narrative") {
+      const verdict = {
+        supports: "the 24h data SUPPORTS the headline's direction (BTC and the median alt both moved that way)",
+        contradicts: "the 24h data CONTRADICTS the headline's direction (BTC and the median alt both moved the other way)",
+        mixed: "the 24h data only PARTLY matches the headline's direction (BTC and the median alt did not move together)",
+      }[f.agreement];
+      lines.push(`- verdict: ${verdict}`);
+    }
   }
   return `\nVerified comparisons (computed by code; use exactly as stated or leave out, never contradict):\n${lines.join("\n")}\n- The data has no trade counts; never write "trade count" or "number of trades".\n`;
 }
