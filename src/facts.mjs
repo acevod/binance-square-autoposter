@@ -127,9 +127,16 @@ export function factsPromptBlock(theme, data) {
     lines.push(`- BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)}: ${f.btcAheadOfAlts ? "BTC is ahead of the median alt" : f.altsAheadOfBtc ? "the median alt is ahead of BTC" : "level"}`);
   }
   if (f.kind === "regime") {
-    lines.push(`- direction: ${f.direction} (${f.breadthUpPct}% of alts are up)`);
-    lines.push(`- leadership: ${f.leadership} (BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)})`);
-    lines.push("- use these two labels exactly; do not call it risk-on/risk-off (the data has no sentiment or flow)");
+    const dir = { "broad-up": "a broad rise", "broad-down": "a broad decline", mixed: "a mixed day" }[f.direction];
+    const lead = {
+      "alts-ahead": "the typical alt did BETTER than BTC (on a down day: fell less)",
+      "btc-ahead": "BTC did BETTER than the typical alt (on a down day: fell less)",
+      "in-line": "BTC and the typical alt did about the same",
+    }[f.leadership];
+    lines.push(`- direction: ${dir} (${f.breadthUpPct}% of alts are up)`);
+    lines.push(`- relative: ${lead} (BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)})`);
+    lines.push('- say these in plain words; never write the tokens "broad-up", "broad-down", "alts-ahead", "btc-ahead" or "in-line", and never say "led the drop" (ambiguous)');
+    lines.push("- do not call it risk-on/risk-off (the data has no sentiment or flow)");
   }
   return `\nVerified comparisons (computed by code; use exactly as stated or leave out, never contradict):\n${lines.join("\n")}\n- The data has no trade counts; never write "trade count" or "number of trades".\n`;
 }
