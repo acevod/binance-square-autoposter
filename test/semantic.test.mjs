@@ -134,3 +134,21 @@ test("regime prompt block states both labels", () => {
   assert.match(block, /leadership: alt-led/);
   assert.match(block, /risk-on/);
 });
+
+// Real bStock rows use lastPriceUSDT / volumeUSDT (not lastPrice / quoteVolume).
+const BSTOCKS = [
+  { cashtag: "$TSLAB", name: "Tesla", lastPriceUSDT: 378, priceChangePercent: -0.5, highPrice: 383, lowPrice: 370, volumeUSDT: 1.6e6 },
+  { cashtag: "$NVDAB", name: "Nvidia", lastPriceUSDT: 190, priceChangePercent: 2.1, highPrice: 192, lowPrice: 185, volumeUSDT: 3.2e6 },
+];
+
+test("facts understand bStock field names (lastPriceUSDT / volumeUSDT)", () => {
+  const f = buildMarketFacts(BSTOCKS);
+  assert.ok(f, "facts must not be null for bStock rows");
+  assert.equal(f.largestQuoteVolume.cashtag, "$NVDAB");
+  assert.equal(f.widestRange.cashtag, "$NVDAB"); // 3.68% vs 3.44% of price
+});
+
+test("bStocks: a wrong superlative is now caught", () => {
+  const r = checkSemantics("$TSLAB had the widest range today, and $NVDAB the biggest dollar volume.", "tokenized-stocks", BSTOCKS);
+  assert.equal(r.ok, false);
+});
