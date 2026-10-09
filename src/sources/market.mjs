@@ -327,6 +327,7 @@ export function buildRegime(basket) {
 
   const altsMedian = median(alts.map((t) => t.priceChangePercent));
   const breadthUpPct = Math.round((alts.filter((t) => t.priceChangePercent > 0).length / alts.length) * 100);
+  const breadthDownPct = Math.round((alts.filter((t) => t.priceChangePercent < 0).length / alts.length) * 100);
   const medianRangePct = median(alts.map((t) => ((t.highPrice - t.lowPrice) / t.lastPrice) * 100));
   const spread = altsMedian - btc.priceChangePercent;
 
@@ -340,6 +341,7 @@ export function buildRegime(basket) {
     altsMedianChangePercent: round2(altsMedian),
     altsCount: alts.length,
     breadthUpPct,
+    breadthDownPct,
     medianRangePct: round2(medianRangePct),
     direction,
     leadership,
