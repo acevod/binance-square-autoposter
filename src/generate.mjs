@@ -258,7 +258,8 @@ ${JSON.stringify(data, null, 2)}
 
 "direction" says how broad the move is: "broad-up" or "broad-down" means at
 least 70% of the alts moved the same way ("breadthUpPct" is the share that are
-up); "mixed" means no clear majority. "leadership" compares the median alt with
+up, "breadthDownPct" the share that are down; quote these, do not compute
+other percentages); "mixed" means no clear majority. "leadership" compares the median alt with
 BTC: "alts-ahead" means the typical alt did better than BTC by 1 point or
 more, "btc-ahead" means BTC did better by 1 point or more, "in-line" means
 they are close. "Better" is about the number: on a down day it means fell
