@@ -21,13 +21,15 @@ export const VALIDATOR_VERSION = "2.0";
 
 // Audit trail stored with each history entry: lets a published number be
 // traced back to the exact source data and settings that produced it.
-function buildMeta(draft) {
+export function buildMeta(draft) {
   const json = JSON.stringify(draft.rawData ?? null);
   return {
     sourceHash: createHash("sha256").update(json).digest("hex").slice(0, 16),
     sourceSnapshot: json.length <= 4000 ? draft.rawData : undefined,
     sourceFetchedAt: draft.fetchedAt,
     promptVersion: draft.promptVersion,
+    provider: draft.provider,
+    model: draft.model,
     validatorVersion: VALIDATOR_VERSION,
   };
 }
