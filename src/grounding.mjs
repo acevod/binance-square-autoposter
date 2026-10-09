@@ -21,6 +21,7 @@ const THEME_EXTRA_CASHTAGS = {
   "relative-strength": ["$BTC", "$ETH"],
   // regime data is a computed summary (BTC vs the alts as a group), no per-asset rows
   "market-regime": ["$BTC"],
+  "data-vs-narrative": ["$BTC"],
 };
 
 const SUFFIX_MULT = { k: 1e3, m: 1e6, b: 1e9, thousand: 1e3, million: 1e6, billion: 1e9 };
