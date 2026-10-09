@@ -107,3 +107,14 @@ test("504 'unknown' result exits non-zero (so the run is not green) and is not r
   assert.equal(r.exitCode, 2);
   assert.equal(calls.publish, 1);
 });
+
+test("buildMeta records provider, model, prompt version and a stable source hash", async () => {
+  const { buildMeta } = await import("../src/run.mjs");
+  const draft = { rawData: [{ cashtag: "$BTC", lastPrice: 1 }], fetchedAt: "2026-10-10T00:00:00.000Z", promptVersion: "2.0", provider: "gemini", model: "gemini-2.5-flash" };
+  const a = buildMeta(draft);
+  assert.equal(a.provider, "gemini");
+  assert.equal(a.model, "gemini-2.5-flash");
+  assert.equal(a.sourceFetchedAt, "2026-10-10T00:00:00.000Z");
+  assert.deepEqual(a.sourceSnapshot, draft.rawData);
+  assert.equal(a.sourceHash, buildMeta({ ...draft }).sourceHash);
+});
