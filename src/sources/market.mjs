@@ -193,14 +193,11 @@ export async function getLeadersLaggards({ basketSize = 20, topN = 3 } = {}) {
  * fetches klines per token — 10 extra calls is fine, 20+ starts adding
  * meaningful latency.
  *
- * Caveat (not fully resolved): `last24hRangePct` comes from ticker/24hr,
- * a rolling window ending now — e.g. if it's 09:00, that's 09:00 yesterday
- * to 09:00 today. `avgRangePct` comes from daily klines, which are UTC
- * calendar-day candles (00:00-00:00). These aren't quite the same window,
- * so the ratio is directionally useful but not a precise apples-to-apples
- * comparison. Fixing properly would mean switching one side to match the
- * other (e.g. computing "today so far" from an intraday kline query
- * instead of the rolling ticker) — not done here to keep this simple.
+ * Both sides now use the SAME kind of window: hourly klines are cut into
+ * consecutive 24-hour windows counted back from now (window 0 = the last 24h,
+ * window 1 = the 24h before that, and so on). The old version compared the
+ * rolling-24h ticker range with UTC calendar-day candles, which are different
+ * windows, so the ratio was only directionally right.
  */
 // A token needs this many full past days for its "usual range" to mean anything
 // (a listing from 2 days ago has no usual range).
@@ -210,17 +207,44 @@ const MIN_HISTORY_DAYS = 5;
 export const BREAKOUT_MIN_RATIO = 1.3;
 export const QUIET_MAX_RATIO = 0.8;
 
+const WINDOW_HOURS = 24;
+
+/**
+ * Cuts hourly candles (oldest first, last one = the forming hour) into
+ * consecutive 24h windows counted back from the newest candle.
+ * Returns the range % of the latest window and of each earlier window
+ * (up to `days`), or null if there are fewer than MIN_HISTORY_DAYS earlier
+ * windows. Range % = (highest high - lowest low) / last close of the window.
+ */
+export function rollingRanges(hourly, days) {
+  const windows = [];
+  for (let k = 0; k <= days; k++) {
+    const end = hourly.length - WINDOW_HOURS * k;
+    const start = end - WINDOW_HOURS;
+    if (start < 0) break;
+    const slice = hourly.slice(start, end);
+    const high = Math.max(...slice.map((c) => c.high));
+    const low = Math.min(...slice.map((c) => c.low));
+    const ref = slice[slice.length - 1].close;
+    if (!(ref > 0)) return null;
+    windows.push(((high - low) / ref) * 100);
+  }
+  const past = windows.slice(1);
+  if (past.length < MIN_HISTORY_DAYS) return null;
+  return { current: windows[0], past };
+}
+
 async function getRangeAnomalies({ basketSize = 10, historyDays = 7 } = {}) {
   const basket = await getDynamicBasket(basketSize);
 
   // allSettled: one pair's failing klines request shouldn't sink the theme.
   const settled = await Promise.allSettled(
     basket.map(async (t) => {
-      const klines = await fetchKlines(t.symbol, "1d", historyDays + 1);
-      const pastDays = klines.slice(0, -1); // exclude today's still-forming candle
-      if (pastDays.length < MIN_HISTORY_DAYS) return null;
-      const avgRangePct = average(pastDays.map((k) => ((k.high - k.low) / k.close) * 100));
-      const last24hRangePct = ((t.highPrice - t.lowPrice) / t.lastPrice) * 100;
+      const hourly = await fetchKlines(t.symbol, "1h", WINDOW_HOURS * (historyDays + 1));
+      const ranges = rollingRanges(hourly, historyDays);
+      if (!ranges) return null;
+      const avgRangePct = average(ranges.past);
+      const last24hRangePct = ranges.current;
 
       return {
         symbol: t.symbol,
