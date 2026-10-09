@@ -19,6 +19,8 @@ import { extractCashtags, stripCashtags } from "./cashtags.mjs";
 // field in that theme's data (relative-strength is computed from BTC and ETH).
 const THEME_EXTRA_CASHTAGS = {
   "relative-strength": ["$BTC", "$ETH"],
+  // regime data is a computed summary (BTC vs the alts as a group), no per-asset rows
+  "market-regime": ["$BTC"],
 };
 
 const SUFFIX_MULT = { k: 1e3, m: 1e6, b: 1e9 };
