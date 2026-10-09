@@ -109,3 +109,28 @@ test("relative strength: contradiction inside one sentence is caught (real 4 Oct
 test("relative strength: correct 'alts beating BTC' is accepted", () => {
   assert.equal(checkSemantics("The median alt gained 1.78%, so the typical alt is outperforming BTC.", "relative-strength", REL).ok, true);
 });
+
+const REGIME = { btcChangePercent: 1.2, altsMedianChangePercent: 2.9, altsCount: 19, breadthUpPct: 79, medianRangePct: 4.1, direction: "broad-up", leadership: "alt-led" };
+
+test("regime: accepts a read that matches the labels", () => {
+  const text = "A broad rally today: 79% of alts are up and the typical alt gained 2.9%, ahead of BTC at 1.2%. It was alt-led.";
+  assert.equal(checkSemantics(text, "market-regime", REGIME).ok, true);
+});
+
+test("regime: rejects 'BTC-led' and 'broad sell-off' against alt-led broad-up data", () => {
+  const r = checkSemantics("A BTC-led day, and a broad sell-off across alts.", "market-regime", REGIME);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /BTC-led/);
+  assert.match(r.reason, /broad sell-off/);
+});
+
+test("regime: rejects 'BTC ahead of the alts' when the median alt is ahead", () => {
+  assert.equal(checkSemantics("BTC is ahead of the broader market today.", "market-regime", REGIME).ok, false);
+});
+
+test("regime prompt block states both labels", () => {
+  const block = factsPromptBlock("market-regime", REGIME);
+  assert.match(block, /direction: broad-up \(79% of alts are up\)/);
+  assert.match(block, /leadership: alt-led/);
+  assert.match(block, /risk-on/);
+});
