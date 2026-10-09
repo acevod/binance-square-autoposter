@@ -35,7 +35,30 @@ const BSTOCKS = {
   CBRSBUSDT: "Cerebras",
   SPYBUSDT: "S&P 500 ETF",
 };
-const BSTOCK_SYMBOLS = Object.keys(BSTOCKS);
+
+// New bStocks can be added WITHOUT a code change: set the BSTOCKS_EXTRA
+// variable (GitHub: Settings > Secrets and variables > Actions > Variables) to
+// e.g. "AAPLBUSDT=Apple,MSFTBUSDT=Microsoft". Names are optional ("AAPLBUSDT").
+// Only plain USDT symbols are accepted, since the symbol goes into a URL. An
+// entry that is not a real pair just fails its own fetch and is skipped, like
+// any delisted symbol above.
+const SYMBOL_PATTERN = /^[A-Z0-9]{2,20}USDT$/;
+
+export function parseExtraBStocks(raw) {
+  const extra = {};
+  for (const part of String(raw ?? "").split(",")) {
+    const [symbol, ...nameParts] = part.split("=");
+    const sym = symbol?.trim().toUpperCase();
+    if (!sym || !SYMBOL_PATTERN.test(sym)) continue;
+    const name = nameParts.join("=").trim();
+    extra[sym] = name || undefined;
+  }
+  return extra;
+}
+
+function activeBStocks() {
+  return { ...BSTOCKS, ...parseExtraBStocks(process.env.BSTOCKS_EXTRA) };
+}
 
 async function fetchTicker24hr(symbol) {
   const res = await fetchWithTimeout(`${BASE_URL}/api/v3/ticker/24hr?symbol=${symbol}`);
@@ -68,7 +91,8 @@ function shuffle(items) {
  * fetched, this throws so the run can retry with another theme.
  */
 export async function getTokenizedStocksSnapshot({ count = 3 } = {}) {
-  const queue = shuffle(BSTOCK_SYMBOLS);
+  const known = activeBStocks();
+  const queue = shuffle(Object.keys(known));
   const fetched = [];
 
   while (fetched.length < count && queue.length > 0) {
@@ -87,7 +111,7 @@ export async function getTokenizedStocksSnapshot({ count = 3 } = {}) {
       // Without this the LLM derives "$NVDA" from the symbol, which isn't
       // the bStock and won't link to its chart on Square.
       cashtag: `$${t.symbol.replace(/USDT$/, "")}`,
-      name: BSTOCKS[t.symbol],
+      name: known[t.symbol],
       lastPriceUSDT: Number(t.lastPrice),
       priceChangePercent: Number(t.priceChangePercent),
       highPrice: Number(t.highPrice),
