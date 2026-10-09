@@ -23,11 +23,14 @@ function collectRows(data, out = []) {
   return out;
 }
 
+// bStock rows call it volumeUSDT; basket rows call it quoteVolume.
+const volumeOf = (row) => row.quoteVolume ?? row.volumeUSDT;
+
 export const isExtreme = (row) => Math.abs(row.priceChangePercent) >= EXTREME_MOVE_PCT;
 
 /** Extreme move on thin volume: should never be turned into a post. */
 export function isThinExtreme(row) {
-  return isExtreme(row) && !(isNum(row.quoteVolume) && row.quoteVolume >= MIN_EXTREME_QUOTE_VOLUME);
+  return isExtreme(row) && !(isNum(volumeOf(row)) && volumeOf(row) >= MIN_EXTREME_QUOTE_VOLUME);
 }
 
 export function extremeRows(data) {
