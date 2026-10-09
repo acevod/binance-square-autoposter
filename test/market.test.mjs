@@ -110,6 +110,7 @@ test("buildRegime: broad-up and alt-led", () => {
   assert.equal(r.direction, "broad-up");
   assert.equal(r.leadership, "alts-ahead");
   assert.equal(r.breadthUpPct, 90);
+  assert.equal(r.breadthDownPct, 10);
   assert.equal(r.altsCount, 10);
 });
 
