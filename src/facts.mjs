@@ -28,9 +28,15 @@ function pickBy(rows, score, dir) {
  * Facts for snapshot-style data (BTC/ETH/BNB tickers, bStocks).
  * Returns null when there is nothing to compare (fewer than 2 usable rows).
  */
+// bStock rows use lastPriceUSDT / volumeUSDT instead of lastPrice / quoteVolume.
+function normalize(r) {
+  if (!r || typeof r !== "object") return r;
+  return { ...r, lastPrice: r.lastPrice ?? r.lastPriceUSDT, quoteVolume: r.quoteVolume ?? r.volumeUSDT };
+}
+
 export function buildMarketFacts(data) {
   if (!Array.isArray(data)) return null;
-  const rows = data.filter(
+  const rows = data.map(normalize).filter(
     (r) => r && typeof r.cashtag === "string" && isNum(r.lastPrice) && r.lastPrice > 0 &&
       isNum(r.highPrice) && isNum(r.lowPrice) && isNum(r.priceChangePercent)
   );
