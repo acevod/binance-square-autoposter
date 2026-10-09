@@ -76,8 +76,24 @@ export function buildRelativeFacts(data) {
   };
 }
 
+/** Facts for the market-regime theme (labels are computed in market.mjs). */
+export function buildRegimeFacts(data) {
+  if (!data || Array.isArray(data) || !isNum(data.btcChangePercent) || !isNum(data.altsMedianChangePercent)) return null;
+  return {
+    kind: "regime",
+    btcChange: data.btcChangePercent,
+    altsMedianChange: data.altsMedianChangePercent,
+    breadthUpPct: data.breadthUpPct,
+    direction: data.direction,
+    leadership: data.leadership,
+    btcAheadOfAlts: data.btcChangePercent > data.altsMedianChangePercent + EPS,
+    altsAheadOfBtc: data.altsMedianChangePercent > data.btcChangePercent + EPS,
+  };
+}
+
 /** Picks the right builder for the data shape. */
 export function buildFacts(theme, data) {
+  if (theme === "market-regime") return buildRegimeFacts(data);
   if (theme === "relative-strength") return buildRelativeFacts(data);
   if (theme === "breakout-watch" || theme === "quiet-movers") return buildRatioFacts(data);
   return buildMarketFacts(data);
@@ -103,6 +119,11 @@ export function factsPromptBlock(theme, data) {
     }
   } else if (f.kind === "relative") {
     lines.push(`- BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)}: ${f.btcAheadOfAlts ? "BTC is ahead of the median alt" : f.altsAheadOfBtc ? "the median alt is ahead of BTC" : "level"}`);
+  }
+  if (f.kind === "regime") {
+    lines.push(`- direction: ${f.direction} (${f.breadthUpPct}% of alts are up)`);
+    lines.push(`- leadership: ${f.leadership} (BTC ${fmt(f.btcChange)} vs median alt ${fmt(f.altsMedianChange)})`);
+    lines.push("- use these two labels exactly; do not call it risk-on/risk-off (the data has no sentiment or flow)");
   }
   return `\nVerified comparisons (computed by code; use exactly as stated or leave out, never contradict):\n${lines.join("\n")}\n- The data has no trade counts; never write "trade count" or "number of trades".\n`;
 }
