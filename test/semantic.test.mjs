@@ -179,3 +179,28 @@ test("rejects 'trade 24/7 on Binance Square' and a wrong 'most volatile' (real f
   assert.match(r.reason, /\$SKHYB called the widest range/);
   assert.match(r.reason, /Binance Square/);
 });
+
+// Published 10 Oct run: superlatives with no noun after them were never checked.
+// Data is synthetic where the real one is unknown (MUB's high), set so MUB is widest.
+const BS = [
+  { cashtag: "$MUB", lastPriceUSDT: 1034.23, priceChangePercent: -2.06, highPrice: 1090, lowPrice: 1018.14, volumeUSDT: 4.7e6 },
+  { cashtag: "$TSLAB", lastPriceUSDT: 383.13, priceChangePercent: 1.29, highPrice: 388.56, lowPrice: 377.96, volumeUSDT: 3e6 },
+  { cashtag: "$INTCB", lastPriceUSDT: 105.04, priceChangePercent: -3.447, highPrice: 109.57, lowPrice: 104.24, volumeUSDT: 4.05e6 },
+];
+
+test("standalone 'the widest of the three' / 'the tightest of the lot' are now checked", () => {
+  const widest = checkSemantics("$INTCB swung a 5.07% range, the widest of the three.", "tokenized-stocks", BS);
+  assert.equal(widest.ok, false);
+  assert.match(widest.reason, /\$INTCB called the widest range, but \$MUB had it/);
+  const tightest = checkSemantics("$INTCB's 24h band was the tightest of the lot.", "tokenized-stocks", BS);
+  assert.equal(tightest.ok, false);
+  assert.equal(checkSemantics("$TSLAB had the tightest range of the lot at 2.77%.", "tokenized-stocks", BS).ok, true);
+  assert.equal(checkSemantics("$MUB swung the widest of the three.", "tokenized-stocks", BS).ok, true);
+});
+
+test("'biggest flow' needs a USDT qualifier and the right token; 'closed at' is rejected", () => {
+  assert.equal(checkSemantics("$INTCB saw the biggest flow of the three.", "tokenized-stocks", BS).ok, false); // no USDT qualifier
+  assert.equal(checkSemantics("$INTCB saw the biggest USDT flow.", "tokenized-stocks", BS).ok, false); // MUB has it
+  assert.equal(checkSemantics("$MUB saw the biggest USDT flow of the three.", "tokenized-stocks", BS).ok, true);
+  assert.equal(checkSemantics("$TSLAB nudged up 1.29% and closed at 383.13 USDT.", "tokenized-stocks", BS).ok, false);
+});
