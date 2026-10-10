@@ -90,6 +90,7 @@ export function buildRegimeFacts(data) {
     btcChange: data.btcChangePercent,
     altsMedianChange: data.altsMedianChangePercent,
     breadthUpPct: data.breadthUpPct,
+    breadthDownPct: data.breadthDownPct,
     direction: data.direction,
     leadership: data.leadership,
     btcAheadOfAlts: data.btcChangePercent > data.altsMedianChangePercent + EPS,
