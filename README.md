@@ -11,10 +11,12 @@ server, nothing that needs to stay running).
 ```
 Cron (GitHub Actions)
   → fetch market data (Binance public spot API, data-api.binance.vision)
+  → (optional) fetch headline context (NEWS_CONTEXT=on)
+  → compute verified facts in code (who had the widest range, who is ahead, ...)
   → generate post text (Groq, Gemini fallback)
   → sanitize (em dashes, unicode quotes, stablecoin cashtags)
-  → validate (length, cashtags, banned patterns, grounding in the source data,
-    duplicates)
+  → validate (length, cashtags, banned patterns, no links, grounding in the
+    source data, claims vs data, hype/closing guard, duplicates)
   → publish to Binance Square
   → commit post history back to the repo
   → (optional) Telegram alert if the run failed
@@ -22,29 +24,38 @@ Cron (GitHub Actions)
 
 ## How it works
 
-1. **Pick a theme**: one of 7, uniform random (`selectTheme()` in
-   `src/generate.mjs`) among the themes that fit the time of day (see "The 7
+1. **Pick a theme**: one of 9, uniform random (`selectTheme()` in
+   `src/generate.mjs`) among the themes that fit the time of day (see "The 9
    themes"), excluding whichever themes appear in the last 4 posts
    (`getRecentThemes()` in `validate.mjs`; posts that failed don't count). If
    that leaves nothing, a recent theme may repeat, but a mistimed one never
    gets picked. This never errors out, even with no history yet.
-2. **Fetch data** for that theme (`src/sources/*.mjs`).
+2. **Fetch data** for that theme (`src/sources/*.mjs`). A theme with no
+   qualifying data today is skipped on the spot and another is tried, without
+   calling the model.
 3. **Generate text** with an LLM (Groq primary, Gemini fallback), using a
-   per-theme prompt plus shared style rules (casual tone, cashtag format,
-   anti-repetition, only-use-supplied-data, etc.).
+   per-theme prompt, shared style rules (casual tone, cashtag format,
+   banned hype words and closings, only-use-supplied-data, etc.) and a block
+   of **verified comparisons computed in code** (`src/facts.mjs`), so the model
+   explains who was widest/largest/ahead instead of deciding it.
 4. **Sanitize** the output deterministically (`sanitizeText()` in
    `generate.mjs`), because prompt instructions alone aren't reliable.
-5. **Validate** (`src/validate.mjs`): length, banned patterns, cashtag
-   count/presence, **grounding** (`src/grounding.mjs`: every `$TICKER` and
-   significant number must exist in the data the LLM was given), and a
-   duplicate check against recent posts.
+5. **Validate** (`src/validate.mjs`): length, banned patterns, **no links or
+   web addresses**, cashtag count/presence, **grounding**
+   (`src/grounding.mjs`: every `$TICKER` and significant number must exist in
+   the data the LLM was given), **semantic checks** (`src/semantic.mjs`: a
+   claim such as "widest range" or "BTC is ahead of the alts" must match the
+   computed facts), the extreme-mover guard (`src/anomaly.mjs`), the
+   hype/closing guard (`src/fatigue.mjs`), headline rules when news is used
+   (`src/news-guard.mjs`), and a duplicate check against recent posts.
 6. If anything fails, **start over** (up to 3 attempts, `src/run.mjs`). Each
    attempt is a fresh generation and may land on a different theme, it
    doesn't just re-roll the same draft. This covers failed validation,
    transient failures while fetching data or calling the LLMs (with growing
    backoff), and a post that Square definitively rejects. A publish whose
    outcome is unknown (timeout, 502, 504) is **never** retried, because the
-   post may be live and publishing again could duplicate it.
+   post may be live and publishing again could duplicate it. A 504 ends the
+   run with exit code 2, so the run is red and the Telegram alert fires.
 7. **Publish** to Binance Square (`src/publish.mjs`). The post is written to
    `data/posts.json` as `pending` *before* the call and updated to its final
    status afterwards, so duplicate protection holds even if the run dies
@@ -61,11 +72,18 @@ Cron (GitHub Actions)
 skills/square-post/            Binance's official posting skill (publishing only)
 src/
   sources/
-    market.mjs                 Themes 1-5 and 7: Binance public market data
+    market.mjs                 Themes 1-5, 7, 8: Binance public market data
     tokenized-stocks.mjs       Theme 6: bStocks (tokenized equities), same API
+    news.mjs                   optional headline context (RSS, titles only)
+    narrative.mjs              Theme 9: headline vs 24h data verdict
   generate.mjs                 theme picker, prompts, LLM calls, sanitizeText
+  facts.mjs                    comparisons computed in code, prompt fact block
   validate.mjs                 pre-publish checks + post history storage
   grounding.mjs                checks tickers/numbers against the source data
+  semantic.mjs                 checks claims (widest, ahead, ...) against the facts
+  anomaly.mjs                  extreme-mover guard (thin-volume pumps)
+  fatigue.mjs                  hype words, stock closings, repeated closings
+  news-guard.mjs               link ban, headline copy/quote/cause rules
   cashtags.mjs                 what counts as a $CASHTAG
   http.mjs                     fetch wrapper with timeouts
   publish.mjs                  publishes to Square, tracks status in history
@@ -89,7 +107,7 @@ LICENSE                        MIT
 It's the only skill this repo depends on. All market data comes straight
 from Binance's public spot API, with no key and no other skill involved.
 
-## The 7 themes
+## The 9 themes
 
 | # | Theme | Source |
 |---|---|---|
@@ -100,11 +118,13 @@ from Binance's public spot API, with no key and no other skill involved.
 | 5 | Relative Strength Check | ETH/BTC pair + median alt vs BTC (price performance, not capital flow) |
 | 6 | Tokenized Stocks Corner | bStocks read as regular spot tickers (`tokenized-stocks.mjs`) |
 | 7 | Daily Recap | BTC/ETH/BNB 24h ticker (`market.mjs`) |
+| 8 | Market Regime | How broad the 24h move is (share of alts up/down) and whether BTC or the typical alt did better; labels computed in `market.mjs` |
+| 9 | Data vs Narrative | One market-wide headline vs the 24h regime, with a supports/contradicts/mixed verdict (`narrative.mjs`); **only when `NEWS_CONTEXT=on`** |
 
 All themes pull exclusively from Binance-listed USDT pairs
 (`data-api.binance.vision`), with no DEX/on-chain token data anywhere in the
 pipeline (see "Not included" for why). Theme selection is uniform random
-(`THEMES` in `src/generate.mjs`) — all 7 themes pull from the same safe
+(`THEMES` in `src/generate.mjs`) — all themes except Data vs Narrative pull from the same safe
 data source, so each gets an equal chance, minus the ones that don't fit the
 time of day and whichever were used in the last 4 posts.
 
@@ -115,8 +135,19 @@ morning brief, the 19:17 and 01:17 slots can pick the recap, and 13:17 picks
 neither. All other themes can run at any time.
 
 Themes 3 and 4 only report genuine anomalies: tokens with fewer than 5 full
-days of history are skipped, and if nothing qualifies the theme fails and the
-run retries with another one (so quiet days produce fewer such posts).
+days of history are skipped, and if nothing qualifies the theme is skipped
+immediately and another is tried (so quiet days produce fewer such posts). Both
+compare like with like: hourly candles are cut into consecutive 24h windows
+counted back from now, and the latest window is compared with the average of
+the 7 before it.
+
+Theme 8 labels are plain thresholds in `market.mjs`: a move is "broad" when at
+least 70% of the alts moved the same way (`BROAD_BREADTH_PCT`), and BTC or the
+typical alt "did better" when it is ahead by 1 point or more
+(`LEADERSHIP_SPREAD_PCT`). They describe the past 24 hours only, not a forecast.
+
+Moves of 30% or more on under $20 M USDT volume are dropped from Leaders &
+Laggards (`src/anomaly.mjs`), so the bot never promotes a thin-volume pump.
 
 The basket behind themes 2-5 is dynamic, not a hardcoded list. Every run
 fetches all USDT pairs, drops stablecoin pairs and ranks the rest by 24h
@@ -140,6 +171,14 @@ Settings → Secrets and variables → Actions:
 | `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) |
 | `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com) |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | *Optional*, see "Failure alerts" below |
+
+Optional **variables** (Settings → Secrets and variables → Actions →
+*Variables*, not Secrets):
+
+| Variable | Effect |
+|---|---|
+| `NEWS_CONTEXT` | `on` lets Leaders & Laggards, Morning Brief and Daily Recap mention one recent headline and enables theme 9. Off by default. Posts name the outlet and never contain links. |
+| `BSTOCKS_EXTRA` | Extra bStocks beyond the built-in list, e.g. `AAPLBUSDT=Apple,MSFTBUSDT=Microsoft` (name optional). |
 
 Secrets never carry over to forks or template copies, so anyone reusing
 this repo needs their own keys (and their own Square key, otherwise posts
@@ -178,7 +217,8 @@ near-identical.
 
 ### 4. Failure alerts (optional)
 
-If a run fails (including a publish whose outcome is unknown), the last
+If a run fails (including a publish whose outcome is unknown: a 504 from
+Square exits with code 2 on purpose, so check Square before re-running), the last
 workflow step can message you on Telegram. Create a bot with @BotFather, get
 your chat id (for example from @userinfobot), and add the secrets
 `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Without both secrets the step is
@@ -199,13 +239,14 @@ npm test
 
 Optional env vars: `GROUNDING_MODE=warn` logs numbers/tickers that can't be
 traced to the source data instead of rejecting the post (useful when rolling
-grounding out); `HTTP_TIMEOUT_MS` overrides every request timeout;
+grounding out); `SEMANTIC_MODE=warn` does the same for claims that contradict
+the data; `NEWS_CONTEXT=on` and `BSTOCKS_EXTRA` as above; `HTTP_TIMEOUT_MS` overrides every request timeout;
 `RETRY_DELAY_MS` overrides the retry backoff base (default 5000).
 
 Test individual sources in isolation:
 
 ```bash
-node src/sources/market.mjs           # themes 1-5 and 7
+node src/sources/market.mjs           # themes 1-5, 7 and 8
 node src/sources/tokenized-stocks.mjs # theme 6
 ```
 
@@ -271,7 +312,8 @@ by hitting the real errors during development:
 - **`success_without_post_id`**: `square-post`'s publish call can return a
   504 and still have actually posted, with `id`/`shareLink` as `null`.
   `publish.mjs` records this as `status: "unknown"` (not `published`) and the
-  run logs a warning to check Square. Timeouts and gateway errors are also
+  run ends with exit code 2 and an error annotation, so it shows red and the
+  Telegram alert fires. Timeouts and gateway errors are also
   `unknown`. An `unknown` outcome is **never retried**, since the post may be
   live and publishing again could duplicate it. History statuses: `pending`
   (written before publishing), `published`, `unknown`, `failed` (Square
@@ -302,16 +344,24 @@ by hitting the real errors during development:
 Deliberately left as-is for a small personal bot, but worth knowing:
 
 - `BSTOCKS` in `tokenized-stocks.mjs` is a hand-maintained list of 7
-  tickers, while Binance keeps adding bStocks. It needs occasional manual
-  updates (check Binance's announcements). A failing symbol is replaced by
+  tickers, while Binance keeps adding bStocks. Add new ones without a code
+  change through the `BSTOCKS_EXTRA` variable (check Binance's
+  announcements for the symbols). A failing symbol is replaced by
   another candidate; if fewer than 2 can be fetched the theme fails and the
   run retries with a different one.
 - Duplicate detection is a simple word-overlap ratio (threshold 0.6) against
   the last 30 posts. It can miss paraphrases and occasionally over-reject
   posts that share common words.
 - Grounding (`src/grounding.mjs`) checks that tickers and numbers exist in the
-  source data, but compares numbers by magnitude only and does not check the
-  wording or the relationship between real numbers.
+  source data, but compares numbers by magnitude only. The relationship
+  between real numbers ("widest", "ahead", "a third tighter") is checked by
+  `src/semantic.mjs`, which is pattern-based: it only judges claims it can
+  attribute to a ticker, and a new phrasing can slip past until a pattern is
+  added. Treat it as a safety net, not a guarantee.
+- News (`NEWS_CONTEXT=on`): the five feed URLs are not verified to be live (a
+  failing feed is logged and skipped, never fatal). Headline direction for
+  theme 9 is keyword-based, and its verdict only compares BTC and the median
+  alt over 24 hours, not the meaning of the headline.
 - If the publish call succeeds but updating its history entry fails, the
   entry stays `pending` (still protects against duplicates) and the run logs
   an error; it does not fail the run.
