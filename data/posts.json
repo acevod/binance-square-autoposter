@@ -1,5 +1,51 @@
 [
   {
+    "id": "173ec586-60ae-44f5-8ba2-7bbdb29e310d",
+    "date": "2026-10-10T05:52:01.598Z",
+    "theme": "tokenized-stocks",
+    "text": "$MUB slipped 2.06% to 1,034.23 USDT, hugging its 24-hour low of 1,018.14 USDT. Volume topped 4.7 M USDT, the biggest flow among the three tokens.\n\nTesla's $TSLAB nudged up 1.29% and closed at 383.13 USDT, staying between a high of 388.56 USDT and a low of 377.96 USDT. The 24-hour range is the tightest of the lot at 2.77%.\n\nIntel's $INTCB took the biggest hit, down 3.447% to 105.04 USDT, with a swing from 109.57 USDT to 104.24 USDT, a 5.07% range, the widest of the three. Volume sat around 4.05 M USDT.",
+    "status": "published",
+    "postId": 375686438914330,
+    "shareLink": "https://app.binance.com/uni-qr/cpos/375686438914330?r=HWHSII2G&l=en",
+    "meta": {
+      "sourceHash": "f35af9b6f493b965",
+      "sourceSnapshot": [
+        {
+          "cashtag": "$MUB",
+          "name": "Micron",
+          "lastPriceUSDT": 1034.23,
+          "priceChangePercent": -2.062,
+          "highPrice": 1060.31,
+          "lowPrice": 1018.14,
+          "volumeUSDT": 4745934.71844
+        },
+        {
+          "cashtag": "$TSLAB",
+          "name": "Tesla",
+          "lastPriceUSDT": 383.13,
+          "priceChangePercent": 1.29,
+          "highPrice": 388.56,
+          "lowPrice": 377.96,
+          "volumeUSDT": 3378631.33174
+        },
+        {
+          "cashtag": "$INTCB",
+          "name": "Intel",
+          "lastPriceUSDT": 105.04,
+          "priceChangePercent": -3.447,
+          "highPrice": 109.57,
+          "lowPrice": 104.24,
+          "volumeUSDT": 4049049.5384
+        }
+      ],
+      "sourceFetchedAt": "2026-10-10T05:52:00.717Z",
+      "promptVersion": "2.0",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "validatorVersion": "2.0"
+    }
+  },
+  {
     "id": "87b9e804-4e6c-4d71-921b-14733b959ac2",
     "date": "2026-10-08T23:24:22.473Z",
     "theme": "relative-strength",
