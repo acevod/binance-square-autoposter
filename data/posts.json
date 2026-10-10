@@ -1,5 +1,82 @@
 [
   {
+    "id": "61e12340-bf5c-473e-a662-b9affcdf3655",
+    "date": "2026-10-10T21:43:07.808Z",
+    "theme": "leaders-laggards",
+    "text": "$STRK jumped 49.2% to $0.1029 on 71.0 M USDT volume, an outlier move in a day. $LUMIA rose 32.3% to $0.1072 with 23.4 M USDT traded, also a one-day outlier. Meanwhile $MAGIC slipped 19.3% to $0.10 on 60.3 M USDT volume, a clear opposite swing. All three saw their biggest 24-hour price changes in the basket.",
+    "status": "published",
+    "postId": 375920182205023,
+    "shareLink": "https://app.binance.com/uni-qr/cpos/375920182205023?r=HWHSII2G&l=en",
+    "meta": {
+      "sourceHash": "5448c1802e33e7a7",
+      "sourceSnapshot": {
+        "leaders": [
+          {
+            "symbol": "STRKUSDT",
+            "cashtag": "$STRK",
+            "lastPrice": 0.10292,
+            "priceChangePercent": 49.224,
+            "highPrice": 0.10675,
+            "lowPrice": 0.06852,
+            "quoteVolume": 71011059.1237161
+          },
+          {
+            "symbol": "LUMIAUSDT",
+            "cashtag": "$LUMIA",
+            "lastPrice": 0.1072,
+            "priceChangePercent": 32.346,
+            "highPrice": 0.1394,
+            "lowPrice": 0.0808,
+            "quoteVolume": 23369413.716356
+          },
+          {
+            "symbol": "CFXUSDT",
+            "cashtag": "$CFX",
+            "lastPrice": 0.06225,
+            "priceChangePercent": 23.856,
+            "highPrice": 0.06494,
+            "lowPrice": 0.05009,
+            "quoteVolume": 23885097.53048
+          }
+        ],
+        "laggards": [
+          {
+            "symbol": "MAGICUSDT",
+            "cashtag": "$MAGIC",
+            "lastPrice": 0.1,
+            "priceChangePercent": -19.29,
+            "highPrice": 0.1639,
+            "lowPrice": 0.0974,
+            "quoteVolume": 60276757.01644
+          },
+          {
+            "symbol": "RLCUSDT",
+            "cashtag": "$RLC",
+            "lastPrice": 0.9742,
+            "priceChangePercent": -7.042,
+            "highPrice": 1.19,
+            "lowPrice": 0.9191,
+            "quoteVolume": 22188277.30265
+          },
+          {
+            "symbol": "QNTUSDT",
+            "cashtag": "$QNT",
+            "lastPrice": 239.94,
+            "priceChangePercent": -2.831,
+            "highPrice": 255,
+            "lowPrice": 238.9,
+            "quoteVolume": 21004125.39829
+          }
+        ]
+      },
+      "sourceFetchedAt": "2026-10-10T21:43:06.128Z",
+      "promptVersion": "2.0",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "validatorVersion": "2.0"
+    }
+  },
+  {
     "id": "2fc87d42-2dd0-446a-9cbd-ed80f57cb6b9",
     "date": "2026-10-10T12:30:51.589Z",
     "theme": "market-regime",
