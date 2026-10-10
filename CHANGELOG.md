@@ -3,6 +3,46 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-10-10
+
+Content-correctness release. Grounding already proved that numbers came from the source data; this release also checks that the *claims made with those numbers* are true, and adds two themes plus optional headline context. Nothing here needs a new secret. See **Upgrade notes** for behaviour changes.
+
+### Added
+- **Fact engine** (`src/facts.mjs`): comparisons such as "widest range (as % of price)", "largest USDT volume", "biggest decliner", "how much tighter than usual" and "BTC vs median alt" are now computed in code. They are passed to the prompt as verified facts, so the model no longer ranks things itself.
+- **Semantic validation** (`src/semantic.mjs`): a post is rejected when its wording contradicts the data (for example "BTC had the widest swing" when ETH did, "a third tighter" when the range is 22% tighter, "BTC is ahead of the alts" when the median alt is ahead). It also rejects volume ranked in token units across assets, "trade count" (the data has none), overnight/after-hours claims drawn from 24h volume, bStocks "trading on Binance Square", and "closed at" for bStocks. `SEMANTIC_MODE=warn` logs instead of rejecting.
+- **Voice guard** (`src/fatigue.mjs`): rejects hype wording (exploded, rocket, moon, ...), the stock closings that had become a fingerprint ("nothing wild", "quiet grind", ...), and a closing sentence too similar to one in the last 10 posts.
+- **Extreme-mover guard** (`src/anomaly.mjs`): a move of 30% or more on under $20 M USDT volume is dropped before it reaches the model. A liquid extreme mover must be posted with its volume and as an outlier, with no stated cause.
+- **No links in posts** (`src/news-guard.mjs`): any URL or web address is rejected, always.
+- **Theme 8, Market Regime**: classifies the past 24h in code (broad rise/decline/mixed by how many alts moved the same way, and whether BTC or the typical alt did better).
+- **Theme 9, Data vs Narrative**: sets one market-wide headline beside the 24h data, with a supports / contradicts / mixed verdict computed in code. Only takes part when `NEWS_CONTEXT=on`.
+- **Optional headline context** (`src/sources/news.mjs`, `NEWS_CONTEXT=on`, off by default): five RSS feeds, title and outlet name only. Titles that contain links or instruction-like text are dropped. Posts may name the outlet and paraphrase or quote up to 12 words; copying 10+ words, stating a headline as the cause of a move, and links are rejected. Feed failures never block a post.
+- **`BSTOCKS_EXTRA`** (Actions variable): add bStocks without a code change, for example `AAPLBUSDT=Apple,MSFTBUSDT=Microsoft`.
+- **Audit trail in `data/posts.json`**: each entry can carry `meta` with `sourceHash`, `sourceSnapshot` (when under 4,000 characters), `sourceFetchedAt`, `promptVersion`, `validatorVersion`, `provider`, `model` and, when used, `headlines` (outlet and title only).
+- Grounding understands "3.72 million" / "1.4 billion" / "5 thousand" as well as `M`, `B`, `K`.
+- Themes with no qualifying data (for example no unusually quiet token today) are skipped immediately, without calling the model or waiting for a retry.
+- Tests: 74 -> 146.
+
+### Changed
+- A publish that Square answers with 504 (probably live, unconfirmed) now ends the run with **exit code 2** and an `::error::` annotation, so the run is red and the Telegram alert fires. It is still never retried.
+- LLM temperature 0.9 -> 0.5 (Groq and Gemini).
+- Prompts: verified-facts block added; hype words and mood closings are named as banned; the tone example no longer contains reusable phrases; the bStocks prompt no longer pushes "trades outside market hours" (the data cannot show when volume happened); the Morning Brief asks for range as a % of price and volume in USDT.
+- Breakout Watch and The Quiet Ones now compare like with like: hourly candles are cut into consecutive 24h windows counted back from now, and the latest window is compared with the average of the 7 before it. Before, a rolling-24h ticker range was compared with UTC calendar-day candles.
+- Leaders & Laggards no longer includes extreme moves on thin volume.
+- Workflow passes `NEWS_CONTEXT` and `BSTOCKS_EXTRA` (both optional Actions variables). `.env.example` lists the Telegram, `BSTOCKS_EXTRA` and `NEWS_CONTEXT` variables.
+
+### Fixed
+- Published posts claiming the wrong asset had the widest range or the largest volume, and "a third tighter" for ranges that were 22% and 59% tighter. About half of the 14 posts reviewed on 2026-10-07 contained such an error.
+- A 504 from Square left the run green with no alert.
+- Repeated stock closings and hype wording in posts, and "BTC is clearly leading the drop" wording that could be read both ways.
+
+### Upgrade notes
+- Start with `SEMANTIC_MODE=warn` in the workflow for a few runs to see how often the new checks reject drafts, then remove it. Expect more rejected attempts at first.
+- `BSTOCKS_EXTRA` and `NEWS_CONTEXT` are Actions **variables** (Settings -> Secrets and variables -> Actions -> Variables), not secrets.
+- The 504 exit code means a Telegram alert now fires for an unconfirmed publish; check Square before re-running.
+- Thresholds are plain constants you can tune: `EXTREME_MOVE_PCT` and `MIN_EXTREME_QUOTE_VOLUME` (`src/anomaly.mjs`), `BROAD_BREADTH_PCT` and `LEADERSHIP_SPREAD_PCT` (`src/sources/market.mjs`).
+- The five news feed URLs and the Data vs Narrative headline-direction keywords have not been run against live feeds yet. Watch the logs for `news feed "..." skipped`.
+- `meta` makes `data/posts.json` larger; it is still capped at the last 30 entries.
+
 ## [1.1.0] - 2026-10-03
 
 Reliability and content-integrity release. No new secrets are required and existing `data/posts.json` files keep working; see **Upgrade notes** for the few behaviour changes.
