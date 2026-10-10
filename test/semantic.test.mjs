@@ -204,3 +204,21 @@ test("'biggest flow' needs a USDT qualifier and the right token; 'closed at' is 
   assert.equal(checkSemantics("$MUB saw the biggest USDT flow of the three.", "tokenized-stocks", BS).ok, true);
   assert.equal(checkSemantics("$TSLAB nudged up 1.29% and closed at 383.13 USDT.", "tokenized-stocks", BS).ok, false);
 });
+
+// Published 10 Oct run (Market Regime): 68% of alts up with "no clear majority", and "swings were modest".
+const MIXED = { btcChangePercent: -0.32, altsMedianChangePercent: 1.04, altsCount: 19, breadthUpPct: 68, breadthDownPct: 32, medianRangePct: 5.6, direction: "mixed", leadership: "alts-ahead" };
+
+test("regime (real 10 Oct post): 'no clear majority' at 68% and 'swings were modest' are rejected", () => {
+  const text = "$BTC slipped 0.32% while the median alt rose 1.04%. 68% of the 19 alts were up, no clear majority. The typical alt's 24-hour range was about 5.6%, so price swings were modest.";
+  const r = checkSemantics(text, "market-regime", MIXED);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /no clear majority/);
+  assert.match(r.reason, /judges the size/);
+});
+
+test("regime: 'most alts were up' and the bare range number are accepted; a real 50/50 split may say no clear majority", () => {
+  const good = "$BTC slipped 0.32% while the median alt rose 1.04%. Most alts were up (68% of 19), and the typical alt's 24-hour range was 5.6%.";
+  assert.equal(checkSemantics(good, "market-regime", MIXED).ok, true);
+  const split = { ...MIXED, breadthUpPct: 53, breadthDownPct: 47 };
+  assert.equal(checkSemantics("About half the alts were up, no clear majority either way.", "market-regime", split).ok, true);
+});
