@@ -1,0 +1,29 @@
+[
+  {
+    "id": "2fc87d42-2dd0-446a-9cbd-ed80f57cb6b9",
+    "date": "2026-10-10T12:30:51.589Z",
+    "theme": "market-regime",
+    "text": "$BTC slipped 0.32% while the median alt actually rose 1.04%.\n68% of the 19 alts that moved were up, 32% down, no clear majority, just a mixed spread.\nThe typical alt's 24-hour range was about 5.6%, so price swings were modest.\n\nBottom line: BTC was the laggard, the broader alt group held up better and showed a slight upside bias.",
+    "status": "published",
+    "postId": 375784457437547,
+    "shareLink": "https://app.binance.com/uni-qr/cpos/375784457437547?r=HWHSII2G&l=en",
+    "meta": {
+      "sourceHash": "6126117ea0495c37",
+      "sourceSnapshot": {
+        "btcChangePercent": -0.32,
+        "altsMedianChangePercent": 1.04,
+        "altsCount": 19,
+        "breadthUpPct": 68,
+        "breadthDownPct": 32,
+        "medianRangePct": 5.62,
+        "direction": "mixed",
+        "leadership": "alts-ahead"
+      },
+      "sourceFetchedAt": "2026-10-10T12:30:50.913Z",
+      "promptVersion": "2.0",
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "validatorVersion": "2.0"
+    }
+  }
+]
