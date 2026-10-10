@@ -168,8 +168,29 @@ const LABEL_LEAK = /\b(?:broad-up|broad-down|alts-ahead|btc-ahead|in-line)\b/i;
 const BROAD_UP = /\b(?:broad|market-?wide|across\s+the\s+board)\s+(?:rally|rebound|gains?|strength|green)\b/i;
 const BROAD_DOWN = /\b(?:broad|market-?wide|across\s+the\s+board)\s+(?:sell-?off|decline|losses|weakness|red|drop)\b/i;
 
+// "No clear majority" is false when most alts did move one way (the "mixed"
+// label only means fewer than 70% did).
+const NO_MAJORITY = /\bno\s+(?:clear\s+)?majority\b/i;
+const MAJORITY_PCT = 60;
+// The data has no baseline for "normal" volatility, so the typical range cannot
+// be called modest, wide, calm, etc.; only its number can be stated.
+const RANGE_JUDGEMENT = /\b(?:modest|tame|calm|quiet|muted|subdued|wide|wild|large|small|narrow|big|huge|massive|choppy)\b/i;
+const RANGE_WORD = /\b(?:range|swings?)\b/i;
+
 function checkRegime(text, facts) {
   const problems = checkRelative(text, facts);
+  if (NO_MAJORITY.test(text)) {
+    const down = facts.breadthDownPct ?? 100 - facts.breadthUpPct;
+    if (Math.max(facts.breadthUpPct, down) >= MAJORITY_PCT) {
+      problems.push(`says "no clear majority", but ${Math.max(facts.breadthUpPct, down)}% of alts moved the same way; say "most alts" instead`);
+    }
+  }
+  for (const sentence of sentences(text)) {
+    if (RANGE_WORD.test(sentence) && RANGE_JUDGEMENT.test(sentence)) {
+      problems.push("judges the size of the typical range (modest/wide/...) with no baseline; state the number only");
+      break;
+    }
+  }
   if (LABEL_LEAK.test(text)) problems.push("pastes an internal label (e.g. broad-down) into the post; say it in plain words");
   if (LED_THE_FALL.test(text)) problems.push('says someone "led the drop"; ambiguous, say who fell more or who held up better');
   if (ALT_LED.test(text) && facts.leadership !== "alts-ahead") problems.push(`calls it alt-led, but leadership is ${facts.leadership}`);
