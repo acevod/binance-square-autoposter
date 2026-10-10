@@ -263,12 +263,16 @@ ${JSON.stringify(data, null, 2)}
 "direction" says how broad the move is: "broad-up" or "broad-down" means at
 least 70% of the alts moved the same way ("breadthUpPct" is the share that are
 up, "breadthDownPct" the share that are down; quote these, do not compute
-other percentages); "mixed" means no clear majority. "leadership" compares the median alt with
+other percentages); "mixed" only means that fewer than 70% moved the same way:
+it can still be a majority, so say "most alts" when over half moved one way and
+never "no clear majority" unless it is close to 50/50. "leadership" compares the median alt with
 BTC: "alts-ahead" means the typical alt did better than BTC by 1 point or
 more, "btc-ahead" means BTC did better by 1 point or more, "in-line" means
 they are close. "Better" is about the number: on a down day it means fell
 LESS, so say "held up better" or "fell less", never "led the drop".
-"medianRangePct" is the typical 24h high-low range of the alts.
+"medianRangePct" is the typical 24h high-low range of the alts: state
+the number, but do not call it modest, wide, calm or similar (there is no
+baseline to compare it with).
 The point of the post is the combination, e.g. a decline that is broad but
 where BTC held up better reads differently from a narrow one where alts held
 up better. Explain what the combination means for how the day looked, and
